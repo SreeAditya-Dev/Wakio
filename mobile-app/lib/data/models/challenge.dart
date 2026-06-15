@@ -38,12 +38,17 @@ class Challenge {
         points: (json['points'] as num?)?.toInt() ?? 10,
       );
 
-  /// Random offline fallback — picks a different household object each time,
-  /// seeded by the current date + microseconds so every alarm potentially
-  /// gets a unique challenge even on the same day.
+  Map<String, dynamic> toJson() => {
+        'object_class': objectClass,
+        'display_name': displayName,
+        'points': points,
+      };
+
+  /// Deterministic offline fallback: seeded purely by the calendar day, so the
+  /// home screen, the scheduled alarm payload, and the ring screen all agree on
+  /// the same object all day — and it works with no network at all.
   factory Challenge.offlineFor(DateTime day) {
-    final seed = day.microsecondsSinceEpoch ^
-        (day.year * 10000 + day.month * 100 + day.day);
+    final seed = day.year * 10000 + day.month * 100 + day.day;
     final rng = Random(seed);
     final obj = householdObjects[rng.nextInt(householdObjects.length)];
     return Challenge(

@@ -32,11 +32,22 @@ class PermissionsService {
 
   Future<AlarmPermissions> check() async {
     return AlarmPermissions(
-      notifications: await Permission.notification.isGranted,
-      exactAlarm: await Permission.scheduleExactAlarm.isGranted,
+      notifications: await _isGranted(Permission.notification),
+      exactAlarm: await _isGranted(Permission.scheduleExactAlarm),
       batteryUnrestricted:
-          await Permission.ignoreBatteryOptimizations.isGranted,
+          await _isGranted(Permission.ignoreBatteryOptimizations),
     );
+  }
+
+  /// Some permissions (notably battery optimization) can throw on devices /
+  /// emulators that don't expose them. Treat any failure as "not granted"
+  /// rather than letting it crash the caller.
+  Future<bool> _isGranted(Permission p) async {
+    try {
+      return await p.isGranted;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Request the permissions an alarm needs to fire from the background. Safe to
@@ -44,15 +55,15 @@ class PermissionsService {
   /// repeated-prompt nagging (which the old every-launch battery prompt caused).
   Future<void> ensureCritical() async {
     // Android 13+: needed to post the ringing notification + full-screen intent.
-    if (!await Permission.notification.isGranted) {
-      await Permission.notification.request();
+    if (!await _isGranted(Permission.notification)) {
+      await _request(Permission.notification);
     }
     // Android 12 only (auto-granted via USE_EXACT_ALARM on 13+). Without it,
     // setExactAndAllowWhileIdle can't arm a Doze-proof alarm, so the alarm only
     // fires once the app/device is woken — exactly the "rings only when I open
     // the app" symptom.
-    if (await Permission.scheduleExactAlarm.isDenied) {
-      await Permission.scheduleExactAlarm.request();
+    if (!await _isGranted(Permission.scheduleExactAlarm)) {
+      await _request(Permission.scheduleExactAlarm);
     }
   }
 
@@ -60,20 +71,40 @@ class PermissionsService {
   /// automatically. Re-grant lives in Settings.
   Future<void> requestBatteryExemptionOnce() async {
     if (await _prefs.batteryPromptShown) return;
-    if (await Permission.ignoreBatteryOptimizations.isDenied) {
-      await Permission.ignoreBatteryOptimizations.request();
+    if (!await _isGranted(Permission.ignoreBatteryOptimizations)) {
+      await _request(Permission.ignoreBatteryOptimizations);
     }
     await _prefs.markBatteryPromptShown();
   }
 
-  Future<void> requestNotifications() => Permission.notification.request();
-  Future<void> requestExactAlarm() => Permission.scheduleExactAlarm.request();
-  Future<void> requestBatteryExemption() =>
-      Permission.ignoreBatteryOptimizations.request();
+  Future<bool> requestNotifications() =>
+      _request(Permission.notification);
+  Future<bool> requestExactAlarm() =>
+      _request(Permission.scheduleExactAlarm);
+  Future<bool> requestBatteryExemption() =>
+      _request(Permission.ignoreBatteryOptimizations);
+
+  /// Requests [p] and reports whether it ended up granted. Never throws — on a
+  /// platform error (e.g. no settings activity for battery optimization) it
+  /// returns false so the UI can fall back to [openSettings].
+  Future<bool> _request(Permission p) async {
+    try {
+      final status = await p.request();
+      return status.isGranted;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Opens the app's system settings page (fallback when a permission is
-  /// permanently denied and can't be re-requested in-app).
-  Future<bool> openSettings() => openAppSettings();
+  /// permanently denied or can't be requested in-app).
+  Future<bool> openSettings() async {
+    try {
+      return await openAppSettings();
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 final permissionsServiceProvider = Provider<PermissionsService>((ref) {

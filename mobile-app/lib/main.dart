@@ -19,14 +19,9 @@ Future<void> main() async {
   // Start the alarm engine; reschedules any alarms set before app death.
   await container.read(alarmServiceProvider).init();
 
-  // Background-ringing permissions. The critical pair (exact alarm +
-  // notifications) is re-checked every launch but no-ops once granted, so an
-  // alarm that can't fire in the background gets a chance to recover instead of
-  // staying silently broken. The battery-optimization prompt — the naggy one —
-  // is asked at most once; re-grant + a "test alarm" live in Settings.
-  final perms = container.read(permissionsServiceProvider);
-  await perms.ensureCritical();
-  await perms.requestBatteryExemptionOnce();
+  // NOTE: permission requests are intentionally NOT awaited here. Blocking
+  // before runApp left the user staring at a blank window while system dialogs
+  // resolved. They now run after the first frame (see _WakioAppState).
 
   runApp(
     UncontrolledProviderScope(
@@ -61,6 +56,14 @@ class _WakioAppState extends ConsumerState<WakioApp> {
       final repo = ref.read(alarmRepositoryProvider);
       await repo.rescheduleAll();
       await repo.syncPending();
+    });
+
+    // Request alarm permissions AFTER the first frame so the UI is already on
+    // screen (no blank-window wait) before any system dialog appears.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final perms = ref.read(permissionsServiceProvider);
+      await perms.ensureCritical();
+      await perms.requestBatteryExemptionOnce();
     });
   }
 

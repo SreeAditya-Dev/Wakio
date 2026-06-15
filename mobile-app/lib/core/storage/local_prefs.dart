@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -19,6 +21,9 @@ class LocalPrefs {
   static const _kBatteryPromptShown = 'battery_prompt_shown';
   // Last-known signed-in user, as the raw /auth/me JSON string.
   static const _kCachedUser = 'cached_user';
+  // Today's resolved challenge (with a 'day' stamp), so it stays stable all day
+  // and needs no network on subsequent reads.
+  static const _kCachedChallenge = 'cached_challenge';
 
   Future<bool> get batteryPromptShown async =>
       (await _storage.read(key: _kBatteryPromptShown)) == '1';
@@ -32,6 +37,19 @@ class LocalPrefs {
   Future<String?> get cachedUser => _storage.read(key: _kCachedUser);
 
   Future<void> clearUser() => _storage.delete(key: _kCachedUser);
+
+  Future<Map<String, dynamic>?> get cachedChallenge async {
+    final raw = await _storage.read(key: _kCachedChallenge);
+    if (raw == null) return null;
+    try {
+      return jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> cacheChallenge(Map<String, dynamic> json) =>
+      _storage.write(key: _kCachedChallenge, value: jsonEncode(json));
 }
 
 final localPrefsProvider = Provider<LocalPrefs>((ref) {

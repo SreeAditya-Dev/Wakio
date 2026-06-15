@@ -120,7 +120,10 @@ class AlarmService {
           volumeEnforced: true,
         ),
         androidFullScreenIntent: true,
-        warningNotificationOnKill: true,
+        // Off on Android: alarms are armed via AlarmManager and survive the app
+        // being swiped away, so the package's "your alarms may not ring" notice
+        // would fire every time the app is closed and just confuse the user.
+        warningNotificationOnKill: false,
         androidStopAlarmOnTermination: false,
         notificationSettings: NotificationSettings(
           title: alarm.label,
@@ -161,7 +164,10 @@ class AlarmService {
         vibrate: true,
         volumeSettings: const VolumeSettings.fixed(volume: 0.4),
         androidFullScreenIntent: true,
-        warningNotificationOnKill: true,
+        // Off on Android: alarms are armed via AlarmManager and survive the app
+        // being swiped away, so the package's "your alarms may not ring" notice
+        // would fire every time the app is closed and just confuse the user.
+        warningNotificationOnKill: false,
         androidStopAlarmOnTermination: false,
         notificationSettings: const NotificationSettings(
           title: 'Still awake?',
@@ -195,7 +201,10 @@ class AlarmService {
           volumeEnforced: true,
         ),
         androidFullScreenIntent: true,
-        warningNotificationOnKill: true,
+        // Off on Android: alarms are armed via AlarmManager and survive the app
+        // being swiped away, so the package's "your alarms may not ring" notice
+        // would fire every time the app is closed and just confuse the user.
+        warningNotificationOnKill: false,
         androidStopAlarmOnTermination: false,
         notificationSettings: NotificationSettings(
           title: alarm.label,
@@ -230,7 +239,10 @@ class AlarmService {
           volumeEnforced: true,
         ),
         androidFullScreenIntent: true,
-        warningNotificationOnKill: true,
+        // Off on Android: alarms are armed via AlarmManager and survive the app
+        // being swiped away, so the package's "your alarms may not ring" notice
+        // would fire every time the app is closed and just confuse the user.
+        warningNotificationOnKill: false,
         androidStopAlarmOnTermination: false,
         notificationSettings: const NotificationSettings(
           title: 'Wakio test alarm',
