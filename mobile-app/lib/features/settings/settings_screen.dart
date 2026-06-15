@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/services/alarm_service.dart';
+import '../../core/services/permissions_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers/theme_controller.dart';
 
@@ -50,6 +52,9 @@ class SettingsScreen extends ConsumerWidget {
             subtitle: 'Tactile feedback on key interactions.',
           ),
           const Divider(),
+          _SectionHeader('Background reliability'),
+          const _ReliabilitySection(),
+          const Divider(),
           _SectionHeader('Notifications'),
           const _InfoTile(
             icon: Icons.notifications_active_outlined,
@@ -98,6 +103,150 @@ class _ThemeOption extends StatelessWidget {
       value: mode,
       title: Text(label),
       activeColor: AppColors.primary,
+    );
+  }
+}
+
+/// Live status of the permissions that let an alarm ring while the app is
+/// closed, with one-tap re-grant and a self-stopping test alarm so the user can
+/// verify background ringing actually works on their device.
+class _ReliabilitySection extends ConsumerStatefulWidget {
+  const _ReliabilitySection();
+
+  @override
+  ConsumerState<_ReliabilitySection> createState() =>
+      _ReliabilitySectionState();
+}
+
+class _ReliabilitySectionState extends ConsumerState<_ReliabilitySection>
+    with WidgetsBindingObserver {
+  AlarmPermissions? _perms;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _refresh();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Re-check when the user returns from a system settings page.
+    if (state == AppLifecycleState.resumed) _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final perms = await ref.read(permissionsServiceProvider).check();
+    if (mounted) setState(() => _perms = perms);
+  }
+
+  Future<void> _sendTestAlarm() async {
+    await ref.read(alarmServiceProvider).scheduleTest();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Test alarm set. Lock or close the app now — it should ring in ~10s.',
+        ),
+        duration: Duration(seconds: 6),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final perms = _perms;
+    final service = ref.read(permissionsServiceProvider);
+
+    return Column(
+      children: [
+        _PermissionTile(
+          title: 'Exact alarms',
+          subtitle: 'Lets alarms fire on time even in Doze / when closed.',
+          granted: perms?.exactAlarm,
+          onFix: () async {
+            await service.requestExactAlarm();
+            await _refresh();
+          },
+        ),
+        _PermissionTile(
+          title: 'Notifications',
+          subtitle: 'Required to show the full-screen alarm over the lockscreen.',
+          granted: perms?.notifications,
+          onFix: () async {
+            await service.requestNotifications();
+            await _refresh();
+          },
+        ),
+        _PermissionTile(
+          title: 'Unrestricted battery',
+          subtitle: 'Stops the system from killing the alarm in the background.',
+          granted: perms?.batteryUnrestricted,
+          onFix: () async {
+            await service.requestBatteryExemption();
+            await _refresh();
+          },
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _sendTestAlarm,
+              icon: const Icon(Icons.notifications_active_rounded),
+              label: const Text('Send test alarm (rings in 10s)'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PermissionTile extends StatelessWidget {
+  const _PermissionTile({
+    required this.title,
+    required this.subtitle,
+    required this.granted,
+    required this.onFix,
+  });
+
+  final String title;
+  final String subtitle;
+  // null = still loading the status.
+  final bool? granted;
+  final VoidCallback onFix;
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = granted == true;
+    return ListTile(
+      leading: Icon(
+        ok ? Icons.check_circle_rounded : Icons.error_outline_rounded,
+        color: granted == null
+            ? Theme.of(context).disabledColor
+            : (ok ? AppColors.success : AppColors.warning),
+      ),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: granted == null || ok
+          ? null
+          : TextButton(
+              onPressed: onFix,
+              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+              child: const Text('Fix'),
+            ),
     );
   }
 }

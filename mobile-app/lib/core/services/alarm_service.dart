@@ -211,6 +211,40 @@ class AlarmService {
     );
   }
 
+  /// Fires a one-off diagnostic alarm [delay] from now (default 10s) so the
+  /// user can lock/close the app and confirm it rings from the background.
+  /// Non-looping, so it stops on its own after the tone plays — and carries a
+  /// 'test' payload the app uses to skip the scan screen.
+  static const int testAlarmId = 990001;
+
+  Future<void> scheduleTest({Duration delay = const Duration(seconds: 10)}) async {
+    await Alarm.set(
+      alarmSettings: AlarmSettings(
+        id: testAlarmId,
+        dateTime: DateTime.now().add(delay),
+        assetAudioPath: _defaultSound,
+        loopAudio: false,
+        vibrate: true,
+        volumeSettings: const VolumeSettings.fixed(
+          volume: 0.8,
+          volumeEnforced: true,
+        ),
+        androidFullScreenIntent: true,
+        warningNotificationOnKill: true,
+        androidStopAlarmOnTermination: false,
+        notificationSettings: const NotificationSettings(
+          title: 'Wakio test alarm',
+          body: 'If you hear this with the app closed, background alarms work.',
+        ),
+        payload: AlarmPayload(
+          type: 'test',
+          alarmId: 'test',
+          challengeObject: 'chair',
+        ).encode(),
+      ),
+    );
+  }
+
   Future<void> cancelRecheck(String historyId) =>
       Alarm.stop(recheckIdFor(historyId));
 

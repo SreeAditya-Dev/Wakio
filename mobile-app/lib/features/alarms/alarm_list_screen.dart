@@ -22,7 +22,7 @@ class AlarmListScreen extends ConsumerWidget {
       // extends its body under the nav, so a default-positioned FAB sits
       // behind the pill).
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 76),
+        padding: const EdgeInsets.only(bottom: 110),
         child: FloatingActionButton(
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.onPrimary,

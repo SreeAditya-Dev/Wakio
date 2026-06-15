@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import 'core/router/app_router.dart';
 import 'core/services/alarm_service.dart';
-import 'core/storage/local_prefs.dart';
+import 'core/services/permissions_service.dart';
 import 'core/theme/app_theme.dart';
 import 'data/providers/theme_controller.dart';
 import 'data/repositories/alarm_repository.dart';
@@ -20,12 +19,14 @@ Future<void> main() async {
   // Start the alarm engine; reschedules any alarms set before app death.
   await container.read(alarmServiceProvider).init();
 
-  // Ask for the alarm-critical permissions ONCE, on first launch only, then
-  // persist a flag. Re-prompting on every cold start (especially battery
-  // optimization, which many OEMs never report as `granted`) was nagging the
-  // user every time they opened the app. After this, re-granting is available
-  // from the Settings screen instead.
-  await _requestAlarmPermissionsOnce(container.read(localPrefsProvider));
+  // Background-ringing permissions. The critical pair (exact alarm +
+  // notifications) is re-checked every launch but no-ops once granted, so an
+  // alarm that can't fire in the background gets a chance to recover instead of
+  // staying silently broken. The battery-optimization prompt — the naggy one —
+  // is asked at most once; re-grant + a "test alarm" live in Settings.
+  final perms = container.read(permissionsServiceProvider);
+  await perms.ensureCritical();
+  await perms.requestBatteryExemptionOnce();
 
   runApp(
     UncontrolledProviderScope(
@@ -33,27 +34,6 @@ Future<void> main() async {
       child: const WakioApp(),
     ),
   );
-}
-
-/// Requests the permissions an alarm needs to fire reliably from the
-/// background — notifications (Android 13+), exact alarms (Android 12+), and
-/// battery-optimization exemption — but only the first time the app runs.
-Future<void> _requestAlarmPermissionsOnce(LocalPrefs prefs) async {
-  if (await prefs.permissionsOnboarded) return;
-
-  // Android 13+: the ringing alarm's notification + full-screen intent.
-  await Permission.notification.request();
-  // Android 12+: setExactAndAllowWhileIdle() throws without this, so the alarm
-  // silently never fires while backgrounded/killed.
-  if (await Permission.scheduleExactAlarm.isDenied) {
-    await Permission.scheduleExactAlarm.request();
-  }
-  // Stops the OS from killing the alarm's foreground service / delaying wake-up.
-  if (await Permission.ignoreBatteryOptimizations.isDenied) {
-    await Permission.ignoreBatteryOptimizations.request();
-  }
-
-  await prefs.markPermissionsOnboarded();
 }
 
 class WakioApp extends ConsumerStatefulWidget {
@@ -91,9 +71,12 @@ class _WakioAppState extends ConsumerState<WakioApp> {
         _ringing = false;
         return;
       }
+      final r = ringing.first;
+      // Diagnostic "test alarm" from Settings: it self-stops after a few
+      // seconds, so just let it ring — no scan screen.
+      if (r.type == 'test') return;
       if (_ringing) return; // already showing the ring/recheck screen
       _ringing = true;
-      final r = ringing.first;
 
       if (r.type == 'recheck') {
         ref.read(routerProvider).push(

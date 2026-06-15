@@ -12,17 +12,19 @@ class LocalPrefs {
 
   final FlutterSecureStorage _storage;
 
-  // Set once after we've asked for exact-alarm + battery-optimization
-  // exemptions, so we never nag the user on every cold start.
-  static const _kPermsOnboarded = 'perms_onboarded';
+  // Set once we've shown the battery-optimization exemption prompt. That prompt
+  // is the naggy one (some OEMs never report it as granted), so it's one-shot;
+  // the Settings screen offers a manual re-grant. Exact-alarm + notifications
+  // are re-checked every launch instead — they no-op once granted.
+  static const _kBatteryPromptShown = 'battery_prompt_shown';
   // Last-known signed-in user, as the raw /auth/me JSON string.
   static const _kCachedUser = 'cached_user';
 
-  Future<bool> get permissionsOnboarded async =>
-      (await _storage.read(key: _kPermsOnboarded)) == '1';
+  Future<bool> get batteryPromptShown async =>
+      (await _storage.read(key: _kBatteryPromptShown)) == '1';
 
-  Future<void> markPermissionsOnboarded() =>
-      _storage.write(key: _kPermsOnboarded, value: '1');
+  Future<void> markBatteryPromptShown() =>
+      _storage.write(key: _kBatteryPromptShown, value: '1');
 
   Future<void> cacheUser(String json) =>
       _storage.write(key: _kCachedUser, value: json);
