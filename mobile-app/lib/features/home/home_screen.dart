@@ -138,11 +138,13 @@ class _NextAlarmCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('No alarms set', style: theme.textTheme.titleLarge),
+            Text('No alarms set',
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(color: AppColors.darkText)),
             const SizedBox(height: 6),
             Text('Tap “Add Alarm” to schedule your first wake-up.',
                 style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                    ?.copyWith(color: AppColors.darkTextSecondary)),
           ],
         ),
       );
