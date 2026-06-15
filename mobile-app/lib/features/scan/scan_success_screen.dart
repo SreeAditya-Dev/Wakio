@@ -59,6 +59,17 @@ class _State extends ConsumerState<ScanSuccessScreen> {
       await ref
           .read(alarmServiceProvider)
           .cancelRecheck(widget.args.historyId!);
+
+      // Best-effort server sync.
+      try {
+        await ref.read(dioProvider).patch(
+              '/alarm-history/${widget.args.historyId}/recheck',
+              data: {
+                'recheck_status': 'relapsed',
+                'recheck_at': now.toIso8601String(),
+              },
+            );
+      } catch (_) {/* will reconcile on next sync */}
     } else {
       // Local history (offline-first).
       final historyId = const Uuid().v4();
@@ -81,17 +92,21 @@ class _State extends ConsumerState<ScanSuccessScreen> {
             challengeObject: widget.args.challengeObject,
           );
 
-      // Best-effort server sync.
+      // Best-effort server sync. The client-generated id lets the server
+      // record map 1:1 with the local row, so a later recheck-status update
+      // can target the same record.
       try {
         await ref.read(dioProvider).post('/alarm-history', data: {
+          'id': historyId,
           'alarm_id': widget.args.alarmId,
           'fired_at': now.toIso8601String(),
           'challenge_object': widget.args.challengeObject,
           'completed': true,
           'wake_time': now.toIso8601String(),
           'points': _points,
+          'recheck_status': 'pending',
         });
-      } catch (_) {/* endpoint may not exist yet; local record stands */}
+      } catch (_) {/* offline — local record stands, retried on next sync */}
     }
 
     final streak = await ref.read(streakRepositoryProvider).recordCompletion(

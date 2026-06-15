@@ -28,3 +28,9 @@ class AlarmHistory(UUIDPrimaryKey, Timestamps, Base):
         DateTime(timezone=True), nullable=True
     )
     points: Mapped[int] = mapped_column(Integer, default=0)
+    # 'pending' (not yet due), 'verified' (confirmed awake), or 'relapsed'
+    # (missed the post-wake check-in — excluded from the streak).
+    recheck_status: Mapped[str] = mapped_column(String(16), default="pending")
+    recheck_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
