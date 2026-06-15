@@ -96,15 +96,22 @@ class _State extends ConsumerState<ScanSuccessScreen> {
             children: [
               const Spacer(),
               Center(
-                child: Container(
-                  height: 130,
-                  width: 130,
-                  decoration: const BoxDecoration(
-                    color: AppColors.success,
-                    shape: BoxShape.circle,
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 550),
+                  curve: Curves.elasticOut,
+                  builder: (context, value, child) =>
+                      Transform.scale(scale: value, child: child),
+                  child: Container(
+                    height: 130,
+                    width: 130,
+                    decoration: const BoxDecoration(
+                      color: AppColors.success,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.check_rounded,
+                        size: 80, color: Colors.white),
                   ),
-                  child: const Icon(Icons.check_rounded,
-                      size: 80, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 36),

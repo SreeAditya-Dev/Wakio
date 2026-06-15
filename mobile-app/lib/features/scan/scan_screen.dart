@@ -40,6 +40,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   Timer? _loop;
   bool _busy = false;
   bool _done = false;
+  bool _success = false;
   String _status = 'Point your camera at the object';
   String? _lastDetected;
 
@@ -114,6 +115,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     await ref.read(hapticsProvider).success();
     // Stop the ringing alarm.
     await ref.read(alarmServiceProvider).cancel(widget.args.scheduledId);
+    if (!mounted) return;
+    // Show the animated tick before handing off to the success screen.
+    setState(() => _success = true);
+    await Future.delayed(const Duration(milliseconds: 900));
     if (!mounted) return;
     context.pushReplacement(
       Routes.scanSuccess,
@@ -224,7 +229,41 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 ),
               ),
             ),
+
+            // Animated success tick — shown once the object is detected.
+            if (_success) const _SuccessTick(),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Green circle with a checkmark that pops in with a bounce.
+class _SuccessTick extends StatelessWidget {
+  const _SuccessTick();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withValues(alpha: 0.55),
+      child: Center(
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 500),
+          curve: Curves.elasticOut,
+          builder: (context, value, child) =>
+              Transform.scale(scale: value, child: child),
+          child: Container(
+            height: 140,
+            width: 140,
+            decoration: const BoxDecoration(
+              color: AppColors.success,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_rounded,
+                size: 90, color: Colors.white),
+          ),
         ),
       ),
     );

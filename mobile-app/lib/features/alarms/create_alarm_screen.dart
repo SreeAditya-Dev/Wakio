@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/services/haptics_service.dart';
+import '../../core/storage/app_database.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
@@ -28,6 +29,7 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
   final _label = TextEditingController(text: 'Alarm');
   bool _loading = false;
   bool _loaded = false;
+  Alarm? _existing;
 
   static const _dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
@@ -44,6 +46,7 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
     final existing = matches.isEmpty ? null : matches.first;
     if (existing != null && mounted) {
       setState(() {
+        _existing = existing;
         _time = existing.timeOfDay;
         _repeatDays.addAll(existing.repeatDayList);
         _volume = existing.volume;
@@ -53,6 +56,33 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
         _loaded = true;
       });
     }
+  }
+
+  Future<void> _confirmDelete() async {
+    final existing = _existing;
+    if (existing == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete alarm?'),
+        content: const Text('This alarm will be removed permanently.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    ref.read(hapticsProvider).medium();
+    await ref.read(alarmRepositoryProvider).delete(existing);
+    if (mounted) context.pop();
   }
 
   @override
@@ -91,7 +121,18 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
     final isEdit = widget.alarmId != null;
 
     return Scaffold(
-      appBar: AppBar(title: Text(isEdit ? 'Edit alarm' : 'New alarm')),
+      appBar: AppBar(
+        title: Text(isEdit ? 'Edit alarm' : 'New alarm'),
+        actions: [
+          if (isEdit)
+            IconButton(
+              onPressed: _confirmDelete,
+              icon: const Icon(Icons.delete_outline_rounded),
+              color: AppColors.error,
+              tooltip: 'Delete alarm',
+            ),
+        ],
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
