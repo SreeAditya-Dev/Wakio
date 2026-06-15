@@ -6,6 +6,9 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <!-- Exact-alarm + full-screen + foreground-service + DND permissions are
          contributed by the `alarm` plugin's manifest and merged in. -->
+    <!-- Lets us ask the user to exempt Wakio from battery optimization, so
+         the alarm keeps ringing when the app is backgrounded/killed. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:label="Wakio"

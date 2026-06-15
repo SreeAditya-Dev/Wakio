@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../../core/widgets/brand_logo.dart';
 import '../../data/providers/auth_controller.dart';
 import '../../data/repositories/auth_repository.dart';
 
@@ -72,6 +73,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 8),
+                const BrandLogo(size: 64),
+                const SizedBox(height: 24),
                 Text('Create account', style: theme.textTheme.headlineMedium),
                 const SizedBox(height: 8),
                 Text('Start waking up properly.',

@@ -20,6 +20,18 @@ Future<void> main() async {
   // Android 13+: without this, the ringing alarm's notification (and its
   // full-screen intent over the lockscreen) may not be shown.
   await Permission.notification.request();
+  // Android 12+: without this, AlarmManager.setExactAndAllowWhileIdle()
+  // throws SecurityException and the alarm silently never fires while the
+  // app is backgrounded/killed. Opens the "Alarms & reminders" system
+  // settings page if not already granted.
+  if (await Permission.scheduleExactAlarm.isDenied) {
+    await Permission.scheduleExactAlarm.request();
+  }
+  // Ask to be exempted from battery optimization so the OS doesn't kill the
+  // alarm's foreground service / delay its wake-up while in the background.
+  if (await Permission.ignoreBatteryOptimizations.isDenied) {
+    await Permission.ignoreBatteryOptimizations.request();
+  }
 
   runApp(
     UncontrolledProviderScope(

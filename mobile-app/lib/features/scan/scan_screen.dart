@@ -41,6 +41,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   bool _busy = false;
   bool _done = false;
   bool _success = false;
+  bool _showWrongMark = false;
+  int _wrongMarkTick = 0;
   String _status = 'Point your camera at the object';
   String? _lastDetected;
 
@@ -94,13 +96,22 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       if (result.targetPresent) {
         await _onSuccess();
       } else {
+        final wrongItemSeen = result.detected.isNotEmpty;
         setState(() {
-          _lastDetected =
-              result.detected.isNotEmpty ? result.detected.first : null;
-          _status = _lastDetected != null
+          _lastDetected = wrongItemSeen ? result.detected.first : null;
+          _status = wrongItemSeen
               ? 'Seeing: $_lastDetected — keep looking for ${widget.args.displayName}'
               : 'Searching for ${widget.args.displayName}…';
+          if (wrongItemSeen) {
+            _wrongMarkTick++;
+            _showWrongMark = true;
+          }
         });
+        if (wrongItemSeen) {
+          Future.delayed(const Duration(milliseconds: 700), () {
+            if (mounted) setState(() => _showWrongMark = false);
+          });
+        }
       }
     } catch (_) {
       /* transient camera/inference error — try again next tick */
@@ -230,6 +241,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               ),
             ),
 
+            // Animated cross — shown briefly when the wrong object is seen.
+            if (_showWrongMark) _WrongMarkTick(key: ValueKey(_wrongMarkTick)),
+
             // Animated success tick — shown once the object is detected.
             if (_success) const _SuccessTick(),
           ],
@@ -263,6 +277,44 @@ class _SuccessTick extends StatelessWidget {
             ),
             child: const Icon(Icons.check_rounded,
                 size: 90, color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Red circle with a cross that pops in with a bounce — shown briefly when
+/// the camera sees an object that isn't the target.
+class _WrongMarkTick extends StatelessWidget {
+  const _WrongMarkTick({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Center(
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.elasticOut,
+          builder: (context, value, child) =>
+              Transform.scale(scale: value, child: child),
+          child: Container(
+            height: 110,
+            width: 110,
+            decoration: BoxDecoration(
+              color: AppColors.error,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.error.withValues(alpha: 0.5),
+                  blurRadius: 30,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: const Icon(Icons.close_rounded,
+                size: 70, color: Colors.white),
           ),
         ),
       ),
