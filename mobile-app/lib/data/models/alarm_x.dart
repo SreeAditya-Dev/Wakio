@@ -24,12 +24,20 @@ extension AlarmX on Alarm {
   }
 
   /// Next DateTime this alarm should fire from [from].
+  ///
+  /// Truncates [from] to minute precision so that scheduling at, say, 3:25
+  /// while the current time is 3:25:05 still targets *this* minute's slot
+  /// rather than deferring to tomorrow.
   DateTime nextOccurrence(DateTime from) {
+    // Drop seconds & microseconds — we only care about the minute boundary.
+    final truncated = DateTime(from.year, from.month, from.day,
+        from.hour, from.minute);
     final days = repeatDayList;
     var candidate =
         DateTime(from.year, from.month, from.day, hour, minute);
     if (days.isEmpty) {
-      if (!candidate.isAfter(from)) {
+      // One-shot: if the candidate minute has already passed, push to tomorrow.
+      if (candidate.isBefore(truncated)) {
         candidate = candidate.add(const Duration(days: 1));
       }
       return candidate;
@@ -37,7 +45,7 @@ extension AlarmX on Alarm {
     for (var i = 0; i < 8; i++) {
       final c = candidate.add(Duration(days: i));
       // DateTime.weekday: Mon=1..Sun=7 -> our 0=Mon..6=Sun
-      if (days.contains(c.weekday - 1) && c.isAfter(from)) return c;
+      if (days.contains(c.weekday - 1) && !c.isBefore(truncated)) return c;
     }
     return candidate; // unreachable in practice
   }

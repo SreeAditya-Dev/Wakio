@@ -43,13 +43,18 @@ class _WakioAppState extends ConsumerState<WakioApp> {
   @override
   void initState() {
     super.initState();
+    // IMPORTANT: Subscribe to the ringing stream BEFORE rescheduling alarms.
+    // On a cold-start from a notification tap, the ringing event may fire
+    // immediately after Alarm.init(); subscribing first ensures we don't
+    // miss it and can navigate to the ring screen while the sound plays.
+    _listenForRinging();
+
     // Re-arm alarms (covers app cold-start) + push pending changes to server.
     Future.microtask(() async {
       final repo = ref.read(alarmRepositoryProvider);
       await repo.rescheduleAll();
       await repo.syncPending();
     });
-    _listenForRinging();
   }
 
   void _listenForRinging() {

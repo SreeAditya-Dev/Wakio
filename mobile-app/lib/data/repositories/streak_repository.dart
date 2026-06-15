@@ -8,8 +8,8 @@ class StreakRepository {
   StreakRepository(this._db);
   final AppDatabase _db;
 
-  Future<StreakSummary> summary() async {
-    final rows = await _db.watchHistory().first;
+  /// Compute a one-shot summary from a given list of history rows.
+  StreakSummary _computeSummary(List<HistoryData> rows) {
     final completed = rows.where((h) => h.completed).toList();
     final totalPoints =
         completed.fold<int>(0, (sum, h) => sum + h.points);
@@ -47,6 +47,18 @@ class StreakRepository {
     );
   }
 
+  /// One-shot summary.
+  Future<StreakSummary> summary() async {
+    final rows = await _db.watchHistory().first;
+    return _computeSummary(rows);
+  }
+
+  /// Reactive stream: emits a new [StreakSummary] every time the history
+  /// table changes (insert / update / delete).
+  Stream<StreakSummary> watchSummary() {
+    return _db.watchHistory().map(_computeSummary);
+  }
+
   Future<int> recordCompletion(
       {required int points, required DateTime day}) async {
     // History row is inserted by the caller; just recompute.
@@ -76,6 +88,6 @@ final streakRepositoryProvider = Provider<StreakRepository>((ref) {
   return StreakRepository(ref.read(appDatabaseProvider));
 });
 
-final streakSummaryProvider = FutureProvider<StreakSummary>((ref) {
-  return ref.read(streakRepositoryProvider).summary();
+final streakSummaryProvider = StreamProvider<StreakSummary>((ref) {
+  return ref.read(streakRepositoryProvider).watchSummary();
 });

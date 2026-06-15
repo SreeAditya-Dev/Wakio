@@ -96,6 +96,11 @@ class AlarmRepository {
   }
 
   Future<void> _reschedule(Alarm alarm) async {
+    // If this alarm is actively ringing right now (e.g. during a cold-start
+    // triggered by the user tapping the alarm notification), do NOT cancel
+    // it — that would kill the sound.
+    if (await _alarmService.isRinging(alarm.scheduledId)) return;
+
     await _alarmService.cancel(alarm.scheduledId);
     if (!alarm.enabled || alarm.deleted) return;
     final challenge = await _challenges.today();
