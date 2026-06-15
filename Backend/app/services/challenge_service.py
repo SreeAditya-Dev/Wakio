@@ -14,11 +14,23 @@ from datetime import date
 from app.core.redis import get_redis
 from app.schemas.challenge import ChallengeOut
 
-# COCO classes that are common indoors and detect reliably at close range.
+# COCO classes that are common indoors / around the house and detect reliably.
 CURATED_OBJECTS: list[str] = [
-    "chair", "bottle", "cup", "book", "laptop", "clock", "mouse",
-    "keyboard", "cell phone", "remote", "scissors", "vase", "backpack",
-    "potted plant", "tv", "teddy bear", "toothbrush",
+    # Furniture & decor
+    "chair", "couch", "bed", "dining table", "potted plant", "vase", "clock",
+    # Kitchen & dining
+    "bottle", "cup", "fork", "knife", "spoon", "bowl", "microwave", "oven",
+    "toaster", "sink", "refrigerator",
+    # Electronics
+    "tv", "laptop", "mouse", "keyboard", "cell phone", "remote",
+    # Personal items
+    "backpack", "umbrella", "handbag", "suitcase",
+    # Books & office
+    "book", "scissors",
+    # Bathroom & grooming
+    "toothbrush", "hair drier",
+    # Fun
+    "teddy bear", "sports ball",
 ]
 
 _CACHE_TTL = 60 * 60 * 26  # a bit over a day

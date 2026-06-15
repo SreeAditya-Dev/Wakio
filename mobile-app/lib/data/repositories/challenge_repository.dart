@@ -15,7 +15,9 @@ class ChallengeRepository {
       final res = await _dio.get('/challenges/today');
       return Challenge.fromJson(res.data as Map<String, dynamic>);
     } on DioException {
-      return Challenge.offlineFor(DateTime.now());
+      // Server unreachable — pick a random household object so the user
+      // isn't always stuck scanning the same thing.
+      return Challenge.random();
     }
   }
 }
