@@ -8,7 +8,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.logging_config import setup_logging
 from app.core.redis import close_redis
+
+# Set up logging configuration
+setup_logging()
+
 
 
 @asynccontextmanager

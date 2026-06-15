@@ -23,9 +23,13 @@ def _get_model():
     if _model is None:
         with _lock:
             if _model is None:
+                import logging
+                logger = logging.getLogger("app.ml")
+                logger.info("Loading YOLO model from %s...", settings.YOLO_MODEL_PATH)
                 from ultralytics import YOLO
 
                 _model = YOLO(settings.YOLO_MODEL_PATH)
+                logger.info("YOLO model loaded successfully")
     return _model
 
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,18 +20,23 @@ from app.schemas.auth import (
 )
 from app.services import auth_service
 
+logger = logging.getLogger("app.auth")
 router = APIRouter()
 
 
 @router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)):
+    logger.info("User signup requested for email: %s", data.email)
     user, tokens = await auth_service.signup(db, data)
+    logger.info("User signup successful for email: %s", data.email)
     return AuthResponse(user=UserOut.model_validate(user), tokens=tokens)
 
 
 @router.post("/login", response_model=AuthResponse)
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+    logger.info("User login requested for email: %s", data.email)
     user, tokens = await auth_service.login(db, data.email, data.password)
+    logger.info("User login successful for email: %s", data.email)
     return AuthResponse(user=UserOut.model_validate(user), tokens=tokens)
 
 
