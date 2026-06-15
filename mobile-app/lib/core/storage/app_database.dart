@@ -20,6 +20,11 @@ class Alarms extends Table {
   IntColumn get volume => integer().withDefault(const Constant(100))();
   IntColumn get snoozeMinutes => integer().withDefault(const Constant(5))();
   BoolColumn get vibrate => boolean().withDefault(const Constant(true))();
+  // Relative path (under the app Documents dir) to a custom ringtone copied
+  // in via the sound picker. Null -> device's default alarm sound.
+  TextColumn get soundPath => text().nullable()();
+  // Original file name of the custom sound, kept for display in the picker.
+  TextColumn get soundName => text().nullable()();
   BoolColumn get enabled => boolean().withDefault(const Constant(true))();
   IntColumn get scheduledId => integer()(); // stable int id for the OS alarm
   DateTimeColumn get updatedAt => dateTime()();
@@ -40,6 +45,12 @@ class History extends Table {
   DateTimeColumn get wakeTime => dateTime().nullable()();
   IntColumn get points => integer().withDefault(const Constant(0))();
   BoolColumn get synced => boolean().withDefault(const Constant(false))();
+  // Outcome of the post-wake "are you still up?" check-in:
+  // 'pending' (not yet due), 'verified' (confirmed awake), or 'relapsed'
+  // (missed the check-in and dozed back off — excluded from the streak).
+  TextColumn get recheckStatus =>
+      text().withDefault(const Constant('pending'))();
+  DateTimeColumn get recheckAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -51,7 +62,21 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
+
+  @override
+  MigrationStrategy get migration => MigrationStrategy(
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(alarms, alarms.soundPath);
+            await m.addColumn(alarms, alarms.soundName);
+          }
+          if (from < 3) {
+            await m.addColumn(history, history.recheckStatus);
+            await m.addColumn(history, history.recheckAt);
+          }
+        },
+      );
 
   // --- Alarms ---
   Stream<List<Alarm>> watchAlarms() =>
@@ -89,6 +114,13 @@ class AppDatabase extends _$AppDatabase {
 
   Stream<List<HistoryData>> watchHistory() =>
       (select(history)..orderBy([(t) => OrderingTerm.desc(t.firedAt)])).watch();
+
+  Future<HistoryData?> historyById(String id) =>
+      (select(history)..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  Future<void> updateRecheckStatus(String id, String status) =>
+      (update(history)..where((t) => t.id.equals(id)))
+          .write(HistoryCompanion(recheckStatus: Value(status)));
 }
 
 LazyDatabase _open() {

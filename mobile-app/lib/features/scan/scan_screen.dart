@@ -19,12 +19,16 @@ class ScanArgs {
     required this.scheduledId,
     required this.challengeObject,
     required this.displayName,
+    this.historyId,
+    this.isRelapse = false,
   });
 
   final String alarmId;
   final int scheduledId;
   final String challengeObject;
   final String displayName;
+  final String? historyId;
+  final bool isRelapse;
 }
 
 class ScanScreen extends ConsumerStatefulWidget {
@@ -137,6 +141,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         alarmId: widget.args.alarmId,
         challengeObject: widget.args.challengeObject,
         displayName: widget.args.displayName,
+        historyId: widget.args.historyId,
+        isRelapse: widget.args.isRelapse,
       ),
     );
   }

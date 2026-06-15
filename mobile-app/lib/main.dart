@@ -9,6 +9,7 @@ import 'core/services/alarm_service.dart';
 import 'core/theme/app_theme.dart';
 import 'data/providers/theme_controller.dart';
 import 'data/repositories/alarm_repository.dart';
+import 'features/recheck/recheck_screen.dart';
 import 'features/ring/ring_screen.dart';
 
 Future<void> main() async {
@@ -76,9 +77,23 @@ class _WakioAppState extends ConsumerState<WakioApp> {
         _ringing = false;
         return;
       }
-      if (_ringing) return; // already showing the ring screen
+      if (_ringing) return; // already showing the ring/recheck screen
       _ringing = true;
       final r = ringing.first;
+
+      if (r.type == 'recheck') {
+        ref.read(routerProvider).push(
+              Routes.recheck,
+              extra: RecheckArgs(
+                alarmId: r.alarmId,
+                historyId: r.historyId!,
+                scheduledId: r.scheduledId,
+                challengeObject: r.challengeObject,
+              ),
+            );
+        return;
+      }
+
       ref.read(routerProvider).push(
             Routes.ring,
             extra: RingArgs(
@@ -86,6 +101,8 @@ class _WakioAppState extends ConsumerState<WakioApp> {
               scheduledId: r.scheduledId,
               challengeObject: r.challengeObject,
               displayName: _titleCase(r.challengeObject),
+              historyId: r.historyId,
+              isRelapse: r.type == 'relapse',
             ),
           );
     });

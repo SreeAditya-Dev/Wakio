@@ -124,6 +124,7 @@ class _HistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final df = DateFormat('d MMM • h:mm a');
+    final relapsed = item.recheckStatus == 'relapsed';
     return AppCard(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -147,10 +148,47 @@ class _HistoryRow extends StatelessWidget {
               ],
             ),
           ),
+          if (item.completed) _RecheckChip(status: item.recheckStatus),
+          const SizedBox(width: 10),
           if (item.points > 0)
-            Text('+${item.points}',
-                style: theme.textTheme.labelLarge
-                    ?.copyWith(color: AppColors.primary)),
+            Text(relapsed ? '+0' : '+${item.points}',
+                style: theme.textTheme.labelLarge?.copyWith(
+                    color:
+                        relapsed ? AppColors.warning : AppColors.primary)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Small status pill showing the outcome of the post-wake check-in.
+class _RecheckChip extends StatelessWidget {
+  const _RecheckChip({required this.status});
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, label, color) = switch (status) {
+      'verified' => (Icons.verified_rounded, 'Verified', AppColors.success),
+      'relapsed' => (Icons.bedtime_rounded, 'Dozed off', AppColors.warning),
+      _ => (Icons.hourglass_top_rounded, 'Checking…', AppColors.warning),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelSmall
+                  ?.copyWith(color: color)),
         ],
       ),
     );

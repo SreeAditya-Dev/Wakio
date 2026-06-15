@@ -49,6 +49,12 @@ flutter run -d <android-emulator-or-device> \
 3. The alarm fires at full volume over the lockscreen and **cannot be swiped away**.
 4. Tap **Open Camera**, point at the wrong object (no dismiss), then the day's
    target object → alarm stops, Scan Success shows points + streak.
+5. **Verified Wake check-in**: 5–15 min later (`AlarmService._recheckDelayMin`/
+   `_recheckDelayMax` — lower these for faster manual testing) a gentle
+   "Still awake?" alarm fires. Tap **I'm up!** within 30s to mark the wake
+   `verified`. Ignore it and the loud alarm re-fires — scanning again marks
+   the original wake `relapsed`, which drops it from the streak/points
+   (see the chip on each row in **Statistics**).
 
 ## 3. Object detection model
 On-device detection needs the TFLite model in `mobile-app/assets/models/yolo11n.tflite`:

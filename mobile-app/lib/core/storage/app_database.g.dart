@@ -106,6 +106,28 @@ class $AlarmsTable extends Alarms with TableInfo<$AlarmsTable, Alarm> {
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _soundPathMeta = const VerificationMeta(
+    'soundPath',
+  );
+  @override
+  late final GeneratedColumn<String> soundPath = GeneratedColumn<String>(
+    'sound_path',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _soundNameMeta = const VerificationMeta(
+    'soundName',
+  );
+  @override
+  late final GeneratedColumn<String> soundName = GeneratedColumn<String>(
+    'sound_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _enabledMeta = const VerificationMeta(
     'enabled',
   );
@@ -182,6 +204,8 @@ class $AlarmsTable extends Alarms with TableInfo<$AlarmsTable, Alarm> {
     volume,
     snoozeMinutes,
     vibrate,
+    soundPath,
+    soundName,
     enabled,
     scheduledId,
     updatedAt,
@@ -261,6 +285,18 @@ class $AlarmsTable extends Alarms with TableInfo<$AlarmsTable, Alarm> {
       context.handle(
         _vibrateMeta,
         vibrate.isAcceptableOrUnknown(data['vibrate']!, _vibrateMeta),
+      );
+    }
+    if (data.containsKey('sound_path')) {
+      context.handle(
+        _soundPathMeta,
+        soundPath.isAcceptableOrUnknown(data['sound_path']!, _soundPathMeta),
+      );
+    }
+    if (data.containsKey('sound_name')) {
+      context.handle(
+        _soundNameMeta,
+        soundName.isAcceptableOrUnknown(data['sound_name']!, _soundNameMeta),
       );
     }
     if (data.containsKey('enabled')) {
@@ -345,6 +381,14 @@ class $AlarmsTable extends Alarms with TableInfo<$AlarmsTable, Alarm> {
         DriftSqlType.bool,
         data['${effectivePrefix}vibrate'],
       )!,
+      soundPath: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sound_path'],
+      ),
+      soundName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sound_name'],
+      ),
       enabled: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}enabled'],
@@ -384,6 +428,8 @@ class Alarm extends DataClass implements Insertable<Alarm> {
   final int volume;
   final int snoozeMinutes;
   final bool vibrate;
+  final String? soundPath;
+  final String? soundName;
   final bool enabled;
   final int scheduledId;
   final DateTime updatedAt;
@@ -399,6 +445,8 @@ class Alarm extends DataClass implements Insertable<Alarm> {
     required this.volume,
     required this.snoozeMinutes,
     required this.vibrate,
+    this.soundPath,
+    this.soundName,
     required this.enabled,
     required this.scheduledId,
     required this.updatedAt,
@@ -417,6 +465,12 @@ class Alarm extends DataClass implements Insertable<Alarm> {
     map['volume'] = Variable<int>(volume);
     map['snooze_minutes'] = Variable<int>(snoozeMinutes);
     map['vibrate'] = Variable<bool>(vibrate);
+    if (!nullToAbsent || soundPath != null) {
+      map['sound_path'] = Variable<String>(soundPath);
+    }
+    if (!nullToAbsent || soundName != null) {
+      map['sound_name'] = Variable<String>(soundName);
+    }
     map['enabled'] = Variable<bool>(enabled);
     map['scheduled_id'] = Variable<int>(scheduledId);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -436,6 +490,12 @@ class Alarm extends DataClass implements Insertable<Alarm> {
       volume: Value(volume),
       snoozeMinutes: Value(snoozeMinutes),
       vibrate: Value(vibrate),
+      soundPath: soundPath == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soundPath),
+      soundName: soundName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(soundName),
       enabled: Value(enabled),
       scheduledId: Value(scheduledId),
       updatedAt: Value(updatedAt),
@@ -459,6 +519,8 @@ class Alarm extends DataClass implements Insertable<Alarm> {
       volume: serializer.fromJson<int>(json['volume']),
       snoozeMinutes: serializer.fromJson<int>(json['snoozeMinutes']),
       vibrate: serializer.fromJson<bool>(json['vibrate']),
+      soundPath: serializer.fromJson<String?>(json['soundPath']),
+      soundName: serializer.fromJson<String?>(json['soundName']),
       enabled: serializer.fromJson<bool>(json['enabled']),
       scheduledId: serializer.fromJson<int>(json['scheduledId']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -479,6 +541,8 @@ class Alarm extends DataClass implements Insertable<Alarm> {
       'volume': serializer.toJson<int>(volume),
       'snoozeMinutes': serializer.toJson<int>(snoozeMinutes),
       'vibrate': serializer.toJson<bool>(vibrate),
+      'soundPath': serializer.toJson<String?>(soundPath),
+      'soundName': serializer.toJson<String?>(soundName),
       'enabled': serializer.toJson<bool>(enabled),
       'scheduledId': serializer.toJson<int>(scheduledId),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -497,6 +561,8 @@ class Alarm extends DataClass implements Insertable<Alarm> {
     int? volume,
     int? snoozeMinutes,
     bool? vibrate,
+    Value<String?> soundPath = const Value.absent(),
+    Value<String?> soundName = const Value.absent(),
     bool? enabled,
     int? scheduledId,
     DateTime? updatedAt,
@@ -512,6 +578,8 @@ class Alarm extends DataClass implements Insertable<Alarm> {
     volume: volume ?? this.volume,
     snoozeMinutes: snoozeMinutes ?? this.snoozeMinutes,
     vibrate: vibrate ?? this.vibrate,
+    soundPath: soundPath.present ? soundPath.value : this.soundPath,
+    soundName: soundName.present ? soundName.value : this.soundName,
     enabled: enabled ?? this.enabled,
     scheduledId: scheduledId ?? this.scheduledId,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -535,6 +603,8 @@ class Alarm extends DataClass implements Insertable<Alarm> {
           ? data.snoozeMinutes.value
           : this.snoozeMinutes,
       vibrate: data.vibrate.present ? data.vibrate.value : this.vibrate,
+      soundPath: data.soundPath.present ? data.soundPath.value : this.soundPath,
+      soundName: data.soundName.present ? data.soundName.value : this.soundName,
       enabled: data.enabled.present ? data.enabled.value : this.enabled,
       scheduledId: data.scheduledId.present
           ? data.scheduledId.value
@@ -557,6 +627,8 @@ class Alarm extends DataClass implements Insertable<Alarm> {
           ..write('volume: $volume, ')
           ..write('snoozeMinutes: $snoozeMinutes, ')
           ..write('vibrate: $vibrate, ')
+          ..write('soundPath: $soundPath, ')
+          ..write('soundName: $soundName, ')
           ..write('enabled: $enabled, ')
           ..write('scheduledId: $scheduledId, ')
           ..write('updatedAt: $updatedAt, ')
@@ -577,6 +649,8 @@ class Alarm extends DataClass implements Insertable<Alarm> {
     volume,
     snoozeMinutes,
     vibrate,
+    soundPath,
+    soundName,
     enabled,
     scheduledId,
     updatedAt,
@@ -596,6 +670,8 @@ class Alarm extends DataClass implements Insertable<Alarm> {
           other.volume == this.volume &&
           other.snoozeMinutes == this.snoozeMinutes &&
           other.vibrate == this.vibrate &&
+          other.soundPath == this.soundPath &&
+          other.soundName == this.soundName &&
           other.enabled == this.enabled &&
           other.scheduledId == this.scheduledId &&
           other.updatedAt == this.updatedAt &&
@@ -613,6 +689,8 @@ class AlarmsCompanion extends UpdateCompanion<Alarm> {
   final Value<int> volume;
   final Value<int> snoozeMinutes;
   final Value<bool> vibrate;
+  final Value<String?> soundPath;
+  final Value<String?> soundName;
   final Value<bool> enabled;
   final Value<int> scheduledId;
   final Value<DateTime> updatedAt;
@@ -629,6 +707,8 @@ class AlarmsCompanion extends UpdateCompanion<Alarm> {
     this.volume = const Value.absent(),
     this.snoozeMinutes = const Value.absent(),
     this.vibrate = const Value.absent(),
+    this.soundPath = const Value.absent(),
+    this.soundName = const Value.absent(),
     this.enabled = const Value.absent(),
     this.scheduledId = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -646,6 +726,8 @@ class AlarmsCompanion extends UpdateCompanion<Alarm> {
     this.volume = const Value.absent(),
     this.snoozeMinutes = const Value.absent(),
     this.vibrate = const Value.absent(),
+    this.soundPath = const Value.absent(),
+    this.soundName = const Value.absent(),
     this.enabled = const Value.absent(),
     required int scheduledId,
     required DateTime updatedAt,
@@ -667,6 +749,8 @@ class AlarmsCompanion extends UpdateCompanion<Alarm> {
     Expression<int>? volume,
     Expression<int>? snoozeMinutes,
     Expression<bool>? vibrate,
+    Expression<String>? soundPath,
+    Expression<String>? soundName,
     Expression<bool>? enabled,
     Expression<int>? scheduledId,
     Expression<DateTime>? updatedAt,
@@ -684,6 +768,8 @@ class AlarmsCompanion extends UpdateCompanion<Alarm> {
       if (volume != null) 'volume': volume,
       if (snoozeMinutes != null) 'snooze_minutes': snoozeMinutes,
       if (vibrate != null) 'vibrate': vibrate,
+      if (soundPath != null) 'sound_path': soundPath,
+      if (soundName != null) 'sound_name': soundName,
       if (enabled != null) 'enabled': enabled,
       if (scheduledId != null) 'scheduled_id': scheduledId,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -703,6 +789,8 @@ class AlarmsCompanion extends UpdateCompanion<Alarm> {
     Value<int>? volume,
     Value<int>? snoozeMinutes,
     Value<bool>? vibrate,
+    Value<String?>? soundPath,
+    Value<String?>? soundName,
     Value<bool>? enabled,
     Value<int>? scheduledId,
     Value<DateTime>? updatedAt,
@@ -720,6 +808,8 @@ class AlarmsCompanion extends UpdateCompanion<Alarm> {
       volume: volume ?? this.volume,
       snoozeMinutes: snoozeMinutes ?? this.snoozeMinutes,
       vibrate: vibrate ?? this.vibrate,
+      soundPath: soundPath ?? this.soundPath,
+      soundName: soundName ?? this.soundName,
       enabled: enabled ?? this.enabled,
       scheduledId: scheduledId ?? this.scheduledId,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -759,6 +849,12 @@ class AlarmsCompanion extends UpdateCompanion<Alarm> {
     if (vibrate.present) {
       map['vibrate'] = Variable<bool>(vibrate.value);
     }
+    if (soundPath.present) {
+      map['sound_path'] = Variable<String>(soundPath.value);
+    }
+    if (soundName.present) {
+      map['sound_name'] = Variable<String>(soundName.value);
+    }
     if (enabled.present) {
       map['enabled'] = Variable<bool>(enabled.value);
     }
@@ -792,6 +888,8 @@ class AlarmsCompanion extends UpdateCompanion<Alarm> {
           ..write('volume: $volume, ')
           ..write('snoozeMinutes: $snoozeMinutes, ')
           ..write('vibrate: $vibrate, ')
+          ..write('soundPath: $soundPath, ')
+          ..write('soundName: $soundName, ')
           ..write('enabled: $enabled, ')
           ..write('scheduledId: $scheduledId, ')
           ..write('updatedAt: $updatedAt, ')
@@ -899,6 +997,29 @@ class $HistoryTable extends History with TableInfo<$HistoryTable, HistoryData> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _recheckStatusMeta = const VerificationMeta(
+    'recheckStatus',
+  );
+  @override
+  late final GeneratedColumn<String> recheckStatus = GeneratedColumn<String>(
+    'recheck_status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  static const VerificationMeta _recheckAtMeta = const VerificationMeta(
+    'recheckAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> recheckAt = GeneratedColumn<DateTime>(
+    'recheck_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -909,6 +1030,8 @@ class $HistoryTable extends History with TableInfo<$HistoryTable, HistoryData> {
     wakeTime,
     points,
     synced,
+    recheckStatus,
+    recheckAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -974,6 +1097,21 @@ class $HistoryTable extends History with TableInfo<$HistoryTable, HistoryData> {
         synced.isAcceptableOrUnknown(data['synced']!, _syncedMeta),
       );
     }
+    if (data.containsKey('recheck_status')) {
+      context.handle(
+        _recheckStatusMeta,
+        recheckStatus.isAcceptableOrUnknown(
+          data['recheck_status']!,
+          _recheckStatusMeta,
+        ),
+      );
+    }
+    if (data.containsKey('recheck_at')) {
+      context.handle(
+        _recheckAtMeta,
+        recheckAt.isAcceptableOrUnknown(data['recheck_at']!, _recheckAtMeta),
+      );
+    }
     return context;
   }
 
@@ -1015,6 +1153,14 @@ class $HistoryTable extends History with TableInfo<$HistoryTable, HistoryData> {
         DriftSqlType.bool,
         data['${effectivePrefix}synced'],
       )!,
+      recheckStatus: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recheck_status'],
+      )!,
+      recheckAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}recheck_at'],
+      ),
     );
   }
 
@@ -1033,6 +1179,8 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
   final DateTime? wakeTime;
   final int points;
   final bool synced;
+  final String recheckStatus;
+  final DateTime? recheckAt;
   const HistoryData({
     required this.id,
     this.alarmId,
@@ -1042,6 +1190,8 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
     this.wakeTime,
     required this.points,
     required this.synced,
+    required this.recheckStatus,
+    this.recheckAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1060,6 +1210,10 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
     }
     map['points'] = Variable<int>(points);
     map['synced'] = Variable<bool>(synced);
+    map['recheck_status'] = Variable<String>(recheckStatus);
+    if (!nullToAbsent || recheckAt != null) {
+      map['recheck_at'] = Variable<DateTime>(recheckAt);
+    }
     return map;
   }
 
@@ -1079,6 +1233,10 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
           : Value(wakeTime),
       points: Value(points),
       synced: Value(synced),
+      recheckStatus: Value(recheckStatus),
+      recheckAt: recheckAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recheckAt),
     );
   }
 
@@ -1096,6 +1254,8 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
       wakeTime: serializer.fromJson<DateTime?>(json['wakeTime']),
       points: serializer.fromJson<int>(json['points']),
       synced: serializer.fromJson<bool>(json['synced']),
+      recheckStatus: serializer.fromJson<String>(json['recheckStatus']),
+      recheckAt: serializer.fromJson<DateTime?>(json['recheckAt']),
     );
   }
   @override
@@ -1110,6 +1270,8 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
       'wakeTime': serializer.toJson<DateTime?>(wakeTime),
       'points': serializer.toJson<int>(points),
       'synced': serializer.toJson<bool>(synced),
+      'recheckStatus': serializer.toJson<String>(recheckStatus),
+      'recheckAt': serializer.toJson<DateTime?>(recheckAt),
     };
   }
 
@@ -1122,6 +1284,8 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
     Value<DateTime?> wakeTime = const Value.absent(),
     int? points,
     bool? synced,
+    String? recheckStatus,
+    Value<DateTime?> recheckAt = const Value.absent(),
   }) => HistoryData(
     id: id ?? this.id,
     alarmId: alarmId.present ? alarmId.value : this.alarmId,
@@ -1133,6 +1297,8 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
     wakeTime: wakeTime.present ? wakeTime.value : this.wakeTime,
     points: points ?? this.points,
     synced: synced ?? this.synced,
+    recheckStatus: recheckStatus ?? this.recheckStatus,
+    recheckAt: recheckAt.present ? recheckAt.value : this.recheckAt,
   );
   HistoryData copyWithCompanion(HistoryCompanion data) {
     return HistoryData(
@@ -1146,6 +1312,10 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
       wakeTime: data.wakeTime.present ? data.wakeTime.value : this.wakeTime,
       points: data.points.present ? data.points.value : this.points,
       synced: data.synced.present ? data.synced.value : this.synced,
+      recheckStatus: data.recheckStatus.present
+          ? data.recheckStatus.value
+          : this.recheckStatus,
+      recheckAt: data.recheckAt.present ? data.recheckAt.value : this.recheckAt,
     );
   }
 
@@ -1159,7 +1329,9 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
           ..write('completed: $completed, ')
           ..write('wakeTime: $wakeTime, ')
           ..write('points: $points, ')
-          ..write('synced: $synced')
+          ..write('synced: $synced, ')
+          ..write('recheckStatus: $recheckStatus, ')
+          ..write('recheckAt: $recheckAt')
           ..write(')'))
         .toString();
   }
@@ -1174,6 +1346,8 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
     wakeTime,
     points,
     synced,
+    recheckStatus,
+    recheckAt,
   );
   @override
   bool operator ==(Object other) =>
@@ -1186,7 +1360,9 @@ class HistoryData extends DataClass implements Insertable<HistoryData> {
           other.completed == this.completed &&
           other.wakeTime == this.wakeTime &&
           other.points == this.points &&
-          other.synced == this.synced);
+          other.synced == this.synced &&
+          other.recheckStatus == this.recheckStatus &&
+          other.recheckAt == this.recheckAt);
 }
 
 class HistoryCompanion extends UpdateCompanion<HistoryData> {
@@ -1198,6 +1374,8 @@ class HistoryCompanion extends UpdateCompanion<HistoryData> {
   final Value<DateTime?> wakeTime;
   final Value<int> points;
   final Value<bool> synced;
+  final Value<String> recheckStatus;
+  final Value<DateTime?> recheckAt;
   final Value<int> rowid;
   const HistoryCompanion({
     this.id = const Value.absent(),
@@ -1208,6 +1386,8 @@ class HistoryCompanion extends UpdateCompanion<HistoryData> {
     this.wakeTime = const Value.absent(),
     this.points = const Value.absent(),
     this.synced = const Value.absent(),
+    this.recheckStatus = const Value.absent(),
+    this.recheckAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   HistoryCompanion.insert({
@@ -1219,6 +1399,8 @@ class HistoryCompanion extends UpdateCompanion<HistoryData> {
     this.wakeTime = const Value.absent(),
     this.points = const Value.absent(),
     this.synced = const Value.absent(),
+    this.recheckStatus = const Value.absent(),
+    this.recheckAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        firedAt = Value(firedAt);
@@ -1231,6 +1413,8 @@ class HistoryCompanion extends UpdateCompanion<HistoryData> {
     Expression<DateTime>? wakeTime,
     Expression<int>? points,
     Expression<bool>? synced,
+    Expression<String>? recheckStatus,
+    Expression<DateTime>? recheckAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1242,6 +1426,8 @@ class HistoryCompanion extends UpdateCompanion<HistoryData> {
       if (wakeTime != null) 'wake_time': wakeTime,
       if (points != null) 'points': points,
       if (synced != null) 'synced': synced,
+      if (recheckStatus != null) 'recheck_status': recheckStatus,
+      if (recheckAt != null) 'recheck_at': recheckAt,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1255,6 +1441,8 @@ class HistoryCompanion extends UpdateCompanion<HistoryData> {
     Value<DateTime?>? wakeTime,
     Value<int>? points,
     Value<bool>? synced,
+    Value<String>? recheckStatus,
+    Value<DateTime?>? recheckAt,
     Value<int>? rowid,
   }) {
     return HistoryCompanion(
@@ -1266,6 +1454,8 @@ class HistoryCompanion extends UpdateCompanion<HistoryData> {
       wakeTime: wakeTime ?? this.wakeTime,
       points: points ?? this.points,
       synced: synced ?? this.synced,
+      recheckStatus: recheckStatus ?? this.recheckStatus,
+      recheckAt: recheckAt ?? this.recheckAt,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1297,6 +1487,12 @@ class HistoryCompanion extends UpdateCompanion<HistoryData> {
     if (synced.present) {
       map['synced'] = Variable<bool>(synced.value);
     }
+    if (recheckStatus.present) {
+      map['recheck_status'] = Variable<String>(recheckStatus.value);
+    }
+    if (recheckAt.present) {
+      map['recheck_at'] = Variable<DateTime>(recheckAt.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1314,6 +1510,8 @@ class HistoryCompanion extends UpdateCompanion<HistoryData> {
           ..write('wakeTime: $wakeTime, ')
           ..write('points: $points, ')
           ..write('synced: $synced, ')
+          ..write('recheckStatus: $recheckStatus, ')
+          ..write('recheckAt: $recheckAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1343,6 +1541,8 @@ typedef $$AlarmsTableCreateCompanionBuilder =
       Value<int> volume,
       Value<int> snoozeMinutes,
       Value<bool> vibrate,
+      Value<String?> soundPath,
+      Value<String?> soundName,
       Value<bool> enabled,
       required int scheduledId,
       required DateTime updatedAt,
@@ -1361,6 +1561,8 @@ typedef $$AlarmsTableUpdateCompanionBuilder =
       Value<int> volume,
       Value<int> snoozeMinutes,
       Value<bool> vibrate,
+      Value<String?> soundPath,
+      Value<String?> soundName,
       Value<bool> enabled,
       Value<int> scheduledId,
       Value<DateTime> updatedAt,
@@ -1420,6 +1622,16 @@ class $$AlarmsTableFilterComposer
 
   ColumnFilters<bool> get vibrate => $composableBuilder(
     column: $table.vibrate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get soundPath => $composableBuilder(
+    column: $table.soundPath,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get soundName => $composableBuilder(
+    column: $table.soundName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1503,6 +1715,16 @@ class $$AlarmsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get soundPath => $composableBuilder(
+    column: $table.soundPath,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get soundName => $composableBuilder(
+    column: $table.soundName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get enabled => $composableBuilder(
     column: $table.enabled,
     builder: (column) => ColumnOrderings(column),
@@ -1571,6 +1793,12 @@ class $$AlarmsTableAnnotationComposer
   GeneratedColumn<bool> get vibrate =>
       $composableBuilder(column: $table.vibrate, builder: (column) => column);
 
+  GeneratedColumn<String> get soundPath =>
+      $composableBuilder(column: $table.soundPath, builder: (column) => column);
+
+  GeneratedColumn<String> get soundName =>
+      $composableBuilder(column: $table.soundName, builder: (column) => column);
+
   GeneratedColumn<bool> get enabled =>
       $composableBuilder(column: $table.enabled, builder: (column) => column);
 
@@ -1626,6 +1854,8 @@ class $$AlarmsTableTableManager
                 Value<int> volume = const Value.absent(),
                 Value<int> snoozeMinutes = const Value.absent(),
                 Value<bool> vibrate = const Value.absent(),
+                Value<String?> soundPath = const Value.absent(),
+                Value<String?> soundName = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
                 Value<int> scheduledId = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -1642,6 +1872,8 @@ class $$AlarmsTableTableManager
                 volume: volume,
                 snoozeMinutes: snoozeMinutes,
                 vibrate: vibrate,
+                soundPath: soundPath,
+                soundName: soundName,
                 enabled: enabled,
                 scheduledId: scheduledId,
                 updatedAt: updatedAt,
@@ -1660,6 +1892,8 @@ class $$AlarmsTableTableManager
                 Value<int> volume = const Value.absent(),
                 Value<int> snoozeMinutes = const Value.absent(),
                 Value<bool> vibrate = const Value.absent(),
+                Value<String?> soundPath = const Value.absent(),
+                Value<String?> soundName = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
                 required int scheduledId,
                 required DateTime updatedAt,
@@ -1676,6 +1910,8 @@ class $$AlarmsTableTableManager
                 volume: volume,
                 snoozeMinutes: snoozeMinutes,
                 vibrate: vibrate,
+                soundPath: soundPath,
+                soundName: soundName,
                 enabled: enabled,
                 scheduledId: scheduledId,
                 updatedAt: updatedAt,
@@ -1715,6 +1951,8 @@ typedef $$HistoryTableCreateCompanionBuilder =
       Value<DateTime?> wakeTime,
       Value<int> points,
       Value<bool> synced,
+      Value<String> recheckStatus,
+      Value<DateTime?> recheckAt,
       Value<int> rowid,
     });
 typedef $$HistoryTableUpdateCompanionBuilder =
@@ -1727,6 +1965,8 @@ typedef $$HistoryTableUpdateCompanionBuilder =
       Value<DateTime?> wakeTime,
       Value<int> points,
       Value<bool> synced,
+      Value<String> recheckStatus,
+      Value<DateTime?> recheckAt,
       Value<int> rowid,
     });
 
@@ -1776,6 +2016,16 @@ class $$HistoryTableFilterComposer
 
   ColumnFilters<bool> get synced => $composableBuilder(
     column: $table.synced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get recheckStatus => $composableBuilder(
+    column: $table.recheckStatus,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get recheckAt => $composableBuilder(
+    column: $table.recheckAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -1828,6 +2078,16 @@ class $$HistoryTableOrderingComposer
     column: $table.synced,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get recheckStatus => $composableBuilder(
+    column: $table.recheckStatus,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get recheckAt => $composableBuilder(
+    column: $table.recheckAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$HistoryTableAnnotationComposer
@@ -1864,6 +2124,14 @@ class $$HistoryTableAnnotationComposer
 
   GeneratedColumn<bool> get synced =>
       $composableBuilder(column: $table.synced, builder: (column) => column);
+
+  GeneratedColumn<String> get recheckStatus => $composableBuilder(
+    column: $table.recheckStatus,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get recheckAt =>
+      $composableBuilder(column: $table.recheckAt, builder: (column) => column);
 }
 
 class $$HistoryTableTableManager
@@ -1905,6 +2173,8 @@ class $$HistoryTableTableManager
                 Value<DateTime?> wakeTime = const Value.absent(),
                 Value<int> points = const Value.absent(),
                 Value<bool> synced = const Value.absent(),
+                Value<String> recheckStatus = const Value.absent(),
+                Value<DateTime?> recheckAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HistoryCompanion(
                 id: id,
@@ -1915,6 +2185,8 @@ class $$HistoryTableTableManager
                 wakeTime: wakeTime,
                 points: points,
                 synced: synced,
+                recheckStatus: recheckStatus,
+                recheckAt: recheckAt,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -1927,6 +2199,8 @@ class $$HistoryTableTableManager
                 Value<DateTime?> wakeTime = const Value.absent(),
                 Value<int> points = const Value.absent(),
                 Value<bool> synced = const Value.absent(),
+                Value<String> recheckStatus = const Value.absent(),
+                Value<DateTime?> recheckAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => HistoryCompanion.insert(
                 id: id,
@@ -1937,6 +2211,8 @@ class $$HistoryTableTableManager
                 wakeTime: wakeTime,
                 points: points,
                 synced: synced,
+                recheckStatus: recheckStatus,
+                recheckAt: recheckAt,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/services/haptics_service.dart';
+import '../../core/services/sound_picker_service.dart';
 import '../../core/storage/app_database.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
@@ -26,6 +27,8 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
   int _volume = 100;
   int _snooze = 5;
   bool _vibrate = true;
+  String? _soundPath;
+  String? _soundName;
   final _label = TextEditingController(text: 'Alarm');
   bool _loading = false;
   bool _loaded = false;
@@ -52,6 +55,8 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
         _volume = existing.volume;
         _snooze = existing.snoozeMinutes;
         _vibrate = existing.vibrate;
+        _soundPath = existing.soundPath;
+        _soundName = existing.soundName;
         _label.text = existing.label;
         _loaded = true;
       });
@@ -96,6 +101,24 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
     if (picked != null) setState(() => _time = picked);
   }
 
+  Future<void> _pickSound() async {
+    final picked = await ref.read(soundPickerServiceProvider).pick();
+    if (picked == null || !mounted) return;
+    ref.read(hapticsProvider).selection();
+    setState(() {
+      _soundPath = picked.$1;
+      _soundName = picked.$2;
+    });
+  }
+
+  void _resetSound() {
+    ref.read(hapticsProvider).selection();
+    setState(() {
+      _soundPath = null;
+      _soundName = null;
+    });
+  }
+
   Future<void> _save() async {
     setState(() => _loading = true);
     try {
@@ -107,6 +130,8 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
             volume: _volume,
             snoozeMinutes: _snooze,
             vibrate: _vibrate,
+            soundPath: _soundPath,
+            soundName: _soundName,
           );
       ref.read(hapticsProvider).success();
       if (mounted) context.pop();
@@ -254,6 +279,45 @@ class _CreateAlarmScreenState extends ConsumerState<CreateAlarmScreen> {
               value: _vibrate,
               onChanged: (v) => setState(() => _vibrate = v),
               title: const Text('Vibrate'),
+            ),
+            const SizedBox(height: 16),
+            _SectionLabel('Sound'),
+            const SizedBox(height: 10),
+            AppCard(
+              onTap: _pickSound,
+              child: Row(
+                children: [
+                  const Icon(Icons.music_note_rounded,
+                      color: AppColors.primary),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _soundName ?? 'Default alarm sound',
+                          style: theme.textTheme.titleMedium,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          _soundName != null
+                              ? 'Tap to change'
+                              : 'Tap to choose a sound from your device',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_soundName != null)
+                    IconButton(
+                      onPressed: _resetSound,
+                      icon: const Icon(Icons.close_rounded),
+                      tooltip: 'Use default alarm sound',
+                    )
+                  else
+                    const Icon(Icons.chevron_right_rounded),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
             AppButton(

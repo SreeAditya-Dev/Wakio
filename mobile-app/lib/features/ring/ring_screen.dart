@@ -17,12 +17,17 @@ class RingArgs {
     required this.scheduledId,
     required this.challengeObject,
     required this.displayName,
+    this.historyId,
+    this.isRelapse = false,
   });
 
   final String alarmId;
   final int scheduledId;
   final String challengeObject;
   final String displayName;
+  // Set when this ring is a re-fire after a missed "still awake?" check-in.
+  final String? historyId;
+  final bool isRelapse;
 }
 
 /// Full-screen, non-dismissable alarm. The ONLY way out is scanning the object
@@ -79,6 +84,8 @@ class _RingScreenState extends ConsumerState<RingScreen>
         scheduledId: a.scheduledId,
         challengeObject: a.challengeObject,
         displayName: a.displayName,
+        historyId: a.historyId,
+        isRelapse: a.isRelapse,
       ),
     );
   }
@@ -127,7 +134,7 @@ class _RingScreenState extends ConsumerState<RingScreen>
                 const SizedBox(height: 36),
                 Text(_now, style: AppTypography.clock(Colors.white)),
                 const SizedBox(height: 8),
-                Text('WAKE UP!',
+                Text(args?.isRelapse == true ? 'YOU DOZED OFF!' : 'WAKE UP!',
                     style: Theme.of(context)
                         .textTheme
                         .headlineSmall

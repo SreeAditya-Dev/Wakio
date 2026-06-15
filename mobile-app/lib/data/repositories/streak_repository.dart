@@ -10,7 +10,11 @@ class StreakRepository {
 
   /// Compute a one-shot summary from a given list of history rows.
   StreakSummary _computeSummary(List<HistoryData> rows) {
-    final completed = rows.where((h) => h.completed).toList();
+    // A relapsed wake (missed the post-wake check-in and dozed back off)
+    // doesn't count toward the streak, points, or success rate.
+    final completed = rows
+        .where((h) => h.completed && h.recheckStatus != 'relapsed')
+        .toList();
     final totalPoints =
         completed.fold<int>(0, (sum, h) => sum + h.points);
 

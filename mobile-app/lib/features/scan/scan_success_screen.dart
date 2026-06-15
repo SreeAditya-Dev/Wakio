@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/network/dio_client.dart';
 import '../../core/router/app_router.dart';
+import '../../core/services/alarm_service.dart';
 import '../../core/storage/app_database.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
@@ -16,10 +17,15 @@ class ScanSuccessArgs {
     required this.alarmId,
     required this.challengeObject,
     required this.displayName,
+    this.historyId,
+    this.isRelapse = false,
   });
   final String alarmId;
   final String challengeObject;
   final String displayName;
+  // Set when this scan stopped the loud re-fire after a missed check-in.
+  final String? historyId;
+  final bool isRelapse;
 }
 
 class ScanSuccessScreen extends ConsumerStatefulWidget {
@@ -45,35 +51,53 @@ class _State extends ConsumerState<ScanSuccessScreen> {
     final db = ref.read(appDatabaseProvider);
     final now = DateTime.now();
 
-    // Local history (offline-first).
-    await db.insertHistory(
-      HistoryCompanion.insert(
-        id: const Uuid().v4(),
-        alarmId: Value(widget.args.alarmId),
-        firedAt: now,
-        challengeObject: Value(widget.args.challengeObject),
-        completed: const Value(true),
-        wakeTime: Value(now),
-        points: const Value(_points),
-      ),
-    );
+    if (widget.args.isRelapse && widget.args.historyId != null) {
+      // Re-fire after a missed check-in: this wake doesn't earn fresh
+      // points, and the original completion no longer counts toward the
+      // streak.
+      await db.updateRecheckStatus(widget.args.historyId!, 'relapsed');
+      await ref
+          .read(alarmServiceProvider)
+          .cancelRecheck(widget.args.historyId!);
+    } else {
+      // Local history (offline-first).
+      final historyId = const Uuid().v4();
+      await db.insertHistory(
+        HistoryCompanion.insert(
+          id: historyId,
+          alarmId: Value(widget.args.alarmId),
+          firedAt: now,
+          challengeObject: Value(widget.args.challengeObject),
+          completed: const Value(true),
+          wakeTime: Value(now),
+          points: const Value(_points),
+          recheckStatus: const Value('pending'),
+        ),
+      );
+
+      await ref.read(alarmServiceProvider).scheduleRecheck(
+            alarmId: widget.args.alarmId,
+            historyId: historyId,
+            challengeObject: widget.args.challengeObject,
+          );
+
+      // Best-effort server sync.
+      try {
+        await ref.read(dioProvider).post('/alarm-history', data: {
+          'alarm_id': widget.args.alarmId,
+          'fired_at': now.toIso8601String(),
+          'challenge_object': widget.args.challengeObject,
+          'completed': true,
+          'wake_time': now.toIso8601String(),
+          'points': _points,
+        });
+      } catch (_) {/* endpoint may not exist yet; local record stands */}
+    }
 
     final streak = await ref.read(streakRepositoryProvider).recordCompletion(
           points: _points,
           day: now,
         );
-
-    // Best-effort server sync.
-    try {
-      await ref.read(dioProvider).post('/alarm-history', data: {
-        'alarm_id': widget.args.alarmId,
-        'fired_at': now.toIso8601String(),
-        'challenge_object': widget.args.challengeObject,
-        'completed': true,
-        'wake_time': now.toIso8601String(),
-        'points': _points,
-      });
-    } catch (_) {/* endpoint may not exist yet; local record stands */}
 
     if (mounted) {
       setState(() {
@@ -86,6 +110,7 @@ class _State extends ConsumerState<ScanSuccessScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isRelapse = widget.args.isRelapse;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -105,32 +130,43 @@ class _State extends ConsumerState<ScanSuccessScreen> {
                   child: Container(
                     height: 130,
                     width: 130,
-                    decoration: const BoxDecoration(
-                      color: AppColors.success,
+                    decoration: BoxDecoration(
+                      color: isRelapse ? AppColors.warning : AppColors.success,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.check_rounded,
-                        size: 80, color: Colors.white),
+                    child: Icon(
+                      isRelapse
+                          ? Icons.bedtime_rounded
+                          : Icons.check_rounded,
+                      size: 80,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 36),
-              Text('Great job!',
+              Text(isRelapse ? 'Back up?' : 'Great job!',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.displaySmall
                       ?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              Text('Alarm stopped. You\'re awake!',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant)),
+              Text(
+                isRelapse
+                    ? "You dozed off after the check-in, so this wake won't "
+                        'count toward your streak.'
+                    : "Alarm stopped. You're awake! We'll check in again "
+                        'soon to make sure it sticks.',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
               const SizedBox(height: 32),
               Row(
                 children: [
                   Expanded(
                     child: _StatPill(
                       icon: Icons.bolt_rounded,
-                      value: '+$_points',
+                      value: isRelapse ? '+0' : '+$_points',
                       label: 'Wake points',
                     ),
                   ),

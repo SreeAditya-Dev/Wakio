@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../core/network/dio_client.dart';
 import '../../core/services/alarm_service.dart';
+import '../../core/services/sound_picker_service.dart';
 import '../../core/storage/app_database.dart';
 import '../models/alarm_x.dart';
 import 'challenge_repository.dart';
@@ -13,12 +14,14 @@ import 'challenge_repository.dart';
 /// Offline-first alarm CRUD: Drift is the source of truth, the OS alarm is
 /// (re)scheduled on every change, and writes are pushed to the backend best-effort.
 class AlarmRepository {
-  AlarmRepository(this._db, this._alarmService, this._dio, this._challenges);
+  AlarmRepository(
+      this._db, this._alarmService, this._dio, this._challenges, this._sounds);
 
   final AppDatabase _db;
   final AlarmService _alarmService;
   final Dio _dio;
   final ChallengeRepository _challenges;
+  final SoundPickerService _sounds;
   static const _uuid = Uuid();
 
   Stream<List<Alarm>> watch() => _db.watchAlarms();
@@ -33,11 +36,19 @@ class AlarmRepository {
     int snoozeMinutes = 5,
     bool vibrate = true,
     bool enabled = true,
+    String? soundPath,
+    String? soundName,
   }) async {
     final alarmId = id ?? _uuid.v4();
     final existing = id != null ? await _db.alarmById(id) : null;
     final scheduledId =
         existing?.scheduledId ?? (DateTime.now().millisecondsSinceEpoch ~/ 1000);
+
+    // If the custom sound changed (or was cleared), drop the old file —
+    // it's no longer referenced by anything.
+    if (existing?.soundPath != null && existing!.soundPath != soundPath) {
+      await _sounds.delete(existing.soundPath);
+    }
 
     final companion = AlarmsCompanion(
       id: Value(alarmId),
@@ -51,6 +62,8 @@ class AlarmRepository {
       vibrate: Value(vibrate),
       enabled: Value(enabled),
       scheduledId: Value(scheduledId),
+      soundPath: Value(soundPath),
+      soundName: Value(soundName),
       updatedAt: Value(DateTime.now()),
       synced: const Value(false),
       deleted: const Value(false),
@@ -79,6 +92,7 @@ class AlarmRepository {
 
   Future<void> delete(Alarm alarm) async {
     await _alarmService.cancel(alarm.scheduledId);
+    await _sounds.delete(alarm.soundPath);
     await _db.softDeleteAlarm(alarm.id);
     try {
       await _dio.delete('/alarms/${alarm.id}');
@@ -184,6 +198,7 @@ final alarmRepositoryProvider = Provider<AlarmRepository>((ref) {
     ref.read(alarmServiceProvider),
     ref.read(dioProvider),
     ref.read(challengeRepositoryProvider),
+    ref.read(soundPickerServiceProvider),
   );
 });
 

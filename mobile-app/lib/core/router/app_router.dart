@@ -13,6 +13,7 @@ import '../../features/auth/splash_screen.dart';
 import '../../features/home/home_screen.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/profile/profile_screen.dart';
+import '../../features/recheck/recheck_screen.dart';
 import '../../features/ring/ring_screen.dart';
 import '../../features/scan/scan_screen.dart';
 import '../../features/scan/scan_success_screen.dart';
@@ -34,6 +35,7 @@ abstract final class Routes {
   static const ring = '/ring';
   static const scan = '/scan';
   static const scanSuccess = '/scan-success';
+  static const recheck = '/recheck';
 }
 
 final _rootKey = GlobalKey<NavigatorState>();
@@ -120,6 +122,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final args = state.extra as ScanSuccessArgs;
           return ScanSuccessScreen(args: args);
+        },
+      ),
+      GoRoute(
+        path: Routes.recheck,
+        parentNavigatorKey: _rootKey,
+        builder: (_, state) {
+          final args = state.extra as RecheckArgs;
+          return RecheckScreen(args: args);
         },
       ),
     ],
