@@ -22,4 +22,12 @@ class AppUser {
             ? DateTime.tryParse(json['created_at'] as String)
             : null,
       );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'email': email,
+        'name': name,
+        'avatar_url': avatarUrl,
+        'created_at': createdAt?.toIso8601String(),
+      };
 }

@@ -1,7 +1,11 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/dio_client.dart';
+import '../../core/storage/local_prefs.dart';
 import '../../core/storage/secure_storage.dart';
 import '../models/user.dart';
 
@@ -13,10 +17,11 @@ class AuthException implements Exception {
 }
 
 class AuthRepository {
-  AuthRepository(this._dio, this._tokens);
+  AuthRepository(this._dio, this._tokens, this._prefs);
 
   final Dio _dio;
   final TokenStore _tokens;
+  final LocalPrefs _prefs;
 
   Future<AppUser> signup({
     required String name,
@@ -45,17 +50,48 @@ class AuthRepository {
     return _handleAuth(res);
   }
 
+  /// Offline-first session restore.
+  ///
+  /// If we hold a session token AND a cached user, return it immediately so the
+  /// app opens straight into the authenticated UI — even with no internet — and
+  /// revalidate with the backend in the background. Only an *explicit* server
+  /// rejection (401) logs the user out; transient/offline errors keep the
+  /// session so a flaky connection never bounces the user to the login screen.
   Future<AppUser?> currentUser() async {
     if (!await _tokens.hasSession) return null;
+
+    final cached = await _prefs.cachedUser;
+    if (cached != null) {
+      unawaited(_fetchMe()); // background refresh; ignore result
+      return AppUser.fromJson(jsonDecode(cached) as Map<String, dynamic>);
+    }
+    // No cache yet (first launch after login on a fresh install): must hit the
+    // network. Returns null when offline -> user lands on login this once.
+    return _fetchMe();
+  }
+
+  /// Hits /auth/me, refreshes the local cache, and surfaces a real logout only
+  /// on a 401. Returns null (without clearing the session) when offline.
+  Future<AppUser?> _fetchMe() async {
     try {
       final res = await _dio.get('/auth/me');
-      return AppUser.fromJson(res.data as Map<String, dynamic>);
-    } on DioException {
+      final data = res.data as Map<String, dynamic>;
+      await _prefs.cacheUser(jsonEncode(data));
+      return AppUser.fromJson(data);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        await _clearSession();
+      }
       return null;
     }
   }
 
-  Future<void> logout() => _tokens.clear();
+  Future<void> logout() => _clearSession();
+
+  Future<void> _clearSession() async {
+    await _tokens.clear();
+    await _prefs.clearUser();
+  }
 
   Future<Response> _call(String path, Map<String, dynamic> body) async {
     try {
@@ -72,7 +108,9 @@ class AuthRepository {
       access: tokens['access_token'] as String,
       refresh: tokens['refresh_token'] as String,
     );
-    return AppUser.fromJson(data['user'] as Map<String, dynamic>);
+    final userJson = data['user'] as Map<String, dynamic>;
+    await _prefs.cacheUser(jsonEncode(userJson)); // for offline restore
+    return AppUser.fromJson(userJson);
   }
 
   String _message(DioException e) {
@@ -87,5 +125,9 @@ class AuthRepository {
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(ref.read(dioProvider), ref.read(tokenStoreProvider));
+  return AuthRepository(
+    ref.read(dioProvider),
+    ref.read(tokenStoreProvider),
+    ref.read(localPrefsProvider),
+  );
 });

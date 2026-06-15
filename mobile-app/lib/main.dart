@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import 'core/router/app_router.dart';
 import 'core/services/alarm_service.dart';
+import 'core/storage/local_prefs.dart';
 import 'core/theme/app_theme.dart';
 import 'data/providers/theme_controller.dart';
 import 'data/repositories/alarm_repository.dart';
@@ -18,21 +19,13 @@ Future<void> main() async {
   final container = ProviderContainer();
   // Start the alarm engine; reschedules any alarms set before app death.
   await container.read(alarmServiceProvider).init();
-  // Android 13+: without this, the ringing alarm's notification (and its
-  // full-screen intent over the lockscreen) may not be shown.
-  await Permission.notification.request();
-  // Android 12+: without this, AlarmManager.setExactAndAllowWhileIdle()
-  // throws SecurityException and the alarm silently never fires while the
-  // app is backgrounded/killed. Opens the "Alarms & reminders" system
-  // settings page if not already granted.
-  if (await Permission.scheduleExactAlarm.isDenied) {
-    await Permission.scheduleExactAlarm.request();
-  }
-  // Ask to be exempted from battery optimization so the OS doesn't kill the
-  // alarm's foreground service / delay its wake-up while in the background.
-  if (await Permission.ignoreBatteryOptimizations.isDenied) {
-    await Permission.ignoreBatteryOptimizations.request();
-  }
+
+  // Ask for the alarm-critical permissions ONCE, on first launch only, then
+  // persist a flag. Re-prompting on every cold start (especially battery
+  // optimization, which many OEMs never report as `granted`) was nagging the
+  // user every time they opened the app. After this, re-granting is available
+  // from the Settings screen instead.
+  await _requestAlarmPermissionsOnce(container.read(localPrefsProvider));
 
   runApp(
     UncontrolledProviderScope(
@@ -40,6 +33,27 @@ Future<void> main() async {
       child: const WakioApp(),
     ),
   );
+}
+
+/// Requests the permissions an alarm needs to fire reliably from the
+/// background — notifications (Android 13+), exact alarms (Android 12+), and
+/// battery-optimization exemption — but only the first time the app runs.
+Future<void> _requestAlarmPermissionsOnce(LocalPrefs prefs) async {
+  if (await prefs.permissionsOnboarded) return;
+
+  // Android 13+: the ringing alarm's notification + full-screen intent.
+  await Permission.notification.request();
+  // Android 12+: setExactAndAllowWhileIdle() throws without this, so the alarm
+  // silently never fires while backgrounded/killed.
+  if (await Permission.scheduleExactAlarm.isDenied) {
+    await Permission.scheduleExactAlarm.request();
+  }
+  // Stops the OS from killing the alarm's foreground service / delaying wake-up.
+  if (await Permission.ignoreBatteryOptimizations.isDenied) {
+    await Permission.ignoreBatteryOptimizations.request();
+  }
+
+  await prefs.markPermissionsOnboarded();
 }
 
 class WakioApp extends ConsumerStatefulWidget {

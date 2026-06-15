@@ -41,6 +41,15 @@ abstract final class Routes {
 final _rootKey = GlobalKey<NavigatorState>();
 final _shellKey = GlobalKey<NavigatorState>();
 
+/// Full-screen routes driven by a firing OS alarm. The auth redirect must let
+/// these through regardless of auth state (see redirect below).
+const _alarmRoutes = {
+  Routes.ring,
+  Routes.scan,
+  Routes.scanSuccess,
+  Routes.recheck,
+};
+
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootKey,
@@ -48,6 +57,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final auth = ref.read(authControllerProvider);
       final loc = state.matchedLocation;
+
+      // Alarm-driven, full-screen routes must NEVER be redirected away from.
+      // On a cold-start triggered by a firing alarm, auth is still resolving
+      // (AuthLoading), and without this the redirect would bounce the ring/scan
+      // screen to /splash -> /home, leaving the alarm audible but with no way to
+      // scan and stop it. These screens are reached only via an OS alarm event.
+      if (_alarmRoutes.contains(loc)) return null;
+
       final onSplash = loc == Routes.splash;
       final onAuthFlow = {
         Routes.login,
