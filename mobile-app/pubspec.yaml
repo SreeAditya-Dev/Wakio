@@ -1,0 +1,83 @@
+name: scan_alarm
+description: "Wakio — Scan-to-Stop Alarm: wake up by scanning a random object."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # --- State management ---
+  flutter_riverpod: ^2.6.1
+  riverpod_annotation: ^2.6.1
+
+  # --- Routing ---
+  go_router: ^14.6.2
+
+  # --- Networking ---
+  dio: ^5.7.0
+
+  # --- Local storage (offline-first) ---
+  drift: ^2.23.1
+  sqlite3_flutter_libs: ^0.5.28
+  path_provider: ^2.1.5
+  path: ^1.9.0
+  uuid: ^4.5.1
+  flutter_secure_storage: ^9.2.4
+
+  # --- Alarm engine + notifications ---
+  alarm: ^5.0.2
+  flutter_local_notifications: ^18.0.1
+  permission_handler: ^11.3.1
+
+  # --- Camera + on-device detection ---
+  camera: ^0.11.0+2
+  # On-device YOLOv11n. ultralytics_yolo if v11 TFLite is supported,
+  # otherwise tflite_flutter with manual pre/post-processing.
+  tflite_flutter: ^0.11.0
+  image: ^4.3.0
+
+  # --- Realtime sync ---
+  supabase_flutter: ^2.8.1
+
+  # --- Push notifications ---
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.5
+
+  # --- Auth helper ---
+  google_sign_in: ^6.2.2
+
+  # --- UX ---
+  google_fonts: ^6.2.1
+  vibration: ^2.0.1
+  flutter_svg: ^2.0.16
+  intl: ^0.19.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # --- Codegen ---
+  build_runner: ^2.4.13
+  riverpod_generator: ^2.6.3
+  drift_dev: ^2.23.1
+
+  # --- App icon generation ---
+  flutter_launcher_icons: ^0.14.3
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/models/
+    - assets/images/
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/logo.png"
+  min_sdk_android: 21

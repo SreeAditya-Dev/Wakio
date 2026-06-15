@@ -1,0 +1,38 @@
+# --- Web framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# --- Settings / validation ---
+pydantic==2.10.4
+pydantic-settings==2.7.1
+email-validator==2.2.0
+
+# --- Database (Supabase Postgres) ---
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+greenlet==3.1.1
+
+# --- Auth / security ---
+passlib[argon2]==1.7.4
+argon2-cffi==23.1.0
+python-jose[cryptography]==3.3.0
+google-auth==2.37.0
+
+# --- Caching / rate limiting ---
+redis==5.2.1
+
+# --- Supabase (storage signed URLs) ---
+supabase==2.10.0
+
+# --- Supabase Storage (S3 protocol) ---
+boto3==1.35.81
+
+# --- Object detection (hybrid fallback) ---
+ultralytics==8.3.55
+pillow==11.0.0
+
+# --- HTTP / misc ---
+httpx==0.28.1
+python-dotenv==1.0.1
