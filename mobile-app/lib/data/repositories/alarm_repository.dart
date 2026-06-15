@@ -9,18 +9,16 @@ import '../../core/services/alarm_service.dart';
 import '../../core/services/sound_picker_service.dart';
 import '../../core/storage/app_database.dart';
 import '../models/alarm_x.dart';
-import 'challenge_repository.dart';
+import '../models/challenge.dart';
 
 /// Offline-first alarm CRUD: Drift is the source of truth, the OS alarm is
 /// (re)scheduled on every change, and writes are pushed to the backend best-effort.
 class AlarmRepository {
-  AlarmRepository(
-      this._db, this._alarmService, this._dio, this._challenges, this._sounds);
+  AlarmRepository(this._db, this._alarmService, this._dio, this._sounds);
 
   final AppDatabase _db;
   final AlarmService _alarmService;
   final Dio _dio;
-  final ChallengeRepository _challenges;
   final SoundPickerService _sounds;
   static const _uuid = Uuid();
 
@@ -117,11 +115,11 @@ class AlarmRepository {
 
     await _alarmService.cancel(alarm.scheduledId);
     if (!alarm.enabled || alarm.deleted) return;
-    final challenge = await _challenges.today();
-    await _alarmService.schedule(
-      alarm,
-      challengeObject: challenge.objectClass,
-    );
+    // A random object per alarm + per day (offline, no server needed) so each
+    // wake-up scans something different instead of always the same thing.
+    final occurrence = alarm.nextOccurrence(DateTime.now());
+    final object = Challenge.forAlarm(alarm.id, occurrence).objectClass;
+    await _alarmService.schedule(alarm, challengeObject: object);
   }
 
   Future<void> _pushToServer(Alarm alarm) async {
@@ -197,7 +195,6 @@ final alarmRepositoryProvider = Provider<AlarmRepository>((ref) {
     ref.read(appDatabaseProvider),
     ref.read(alarmServiceProvider),
     ref.read(dioProvider),
-    ref.read(challengeRepositoryProvider),
     ref.read(soundPickerServiceProvider),
   );
 });

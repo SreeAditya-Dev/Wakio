@@ -68,6 +68,21 @@ class Challenge {
     );
   }
 
+  /// The object for one alarm occurrence: varies per alarm AND per day (so you
+  /// scan something different each morning and different alarms differ), yet is
+  /// stable across re-scheduling the same alarm on the same day — so the home
+  /// card and the actual ring always agree. Fully offline.
+  factory Challenge.forAlarm(String alarmId, DateTime occurrence) {
+    final daySeed =
+        occurrence.year * 10000 + occurrence.month * 100 + occurrence.day;
+    final rng = Random(Object.hash(alarmId, daySeed));
+    final obj = householdObjects[rng.nextInt(householdObjects.length)];
+    return Challenge(
+      objectClass: obj,
+      displayName: _titleCase(obj),
+    );
+  }
+
   static String _titleCase(String s) => s
       .split(' ')
       .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')

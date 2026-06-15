@@ -7,9 +7,9 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/widgets/app_card.dart';
 import '../../data/models/alarm_x.dart';
+import '../../data/models/challenge.dart';
 import '../../data/providers/auth_controller.dart';
 import '../../data/repositories/alarm_repository.dart';
-import '../../data/repositories/challenge_repository.dart';
 import '../../core/storage/app_database.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -19,7 +19,6 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final alarms = ref.watch(alarmsStreamProvider);
-    final challenge = ref.watch(todaysChallengeProvider);
     final auth = ref.watch(authControllerProvider);
     final name = switch (auth) {
       Authenticated(:final user) => user.name.split(' ').first,
@@ -30,7 +29,6 @@ class HomeScreen extends ConsumerWidget {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async {
-            ref.invalidate(todaysChallengeProvider);
             await ref.read(alarmRepositoryProvider).syncPending();
           },
           child: ListView(
@@ -61,38 +59,9 @@ class HomeScreen extends ConsumerWidget {
                 data: (list) => _NextAlarmCard(alarms: list),
               ),
               const SizedBox(height: 16),
-              challenge.when(
-                loading: () => const _ChallengeSkeleton(),
-                error: (_, __) => const SizedBox.shrink(),
-                data: (c) => AppCard(
-                  child: Row(
-                    children: [
-                      Container(
-                        height: 56,
-                        width: 56,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(Icons.center_focus_strong_rounded,
-                            color: AppColors.primary),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Today's challenge",
-                                style: theme.textTheme.bodySmall),
-                            const SizedBox(height: 2),
-                            Text('Scan a ${c.displayName}',
-                                style: theme.textTheme.titleLarge),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              alarms.maybeWhen(
+                data: (list) => _ChallengeCard(alarms: list),
+                orElse: () => const _ChallengeSkeleton(),
               ),
               const SizedBox(height: 28),
               SizedBox(
@@ -113,6 +82,62 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Shows the object the *next* alarm will ask you to scan — computed the same
+/// way the alarm is scheduled, so the card and the actual ring always match.
+class _ChallengeCard extends StatelessWidget {
+  const _ChallengeCard({required this.alarms});
+  final List<Alarm> alarms;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    final enabled = alarms.where((a) => a.enabled).toList();
+
+    final String title;
+    final String value;
+    if (enabled.isEmpty) {
+      title = "Today's challenge";
+      value = 'Set an alarm to get one';
+    } else {
+      enabled.sort(
+          (a, b) => a.nextOccurrence(now).compareTo(b.nextOccurrence(now)));
+      final next = enabled.first;
+      final object = Challenge.forAlarm(next.id, next.nextOccurrence(now));
+      title = 'Next wake-up — scan a';
+      value = object.displayName;
+    }
+
+    return AppCard(
+      child: Row(
+        children: [
+          Container(
+            height: 56,
+            width: 56,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(Icons.center_focus_strong_rounded,
+                color: AppColors.primary),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: theme.textTheme.bodySmall),
+                const SizedBox(height: 2),
+                Text(value, style: theme.textTheme.titleLarge),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
