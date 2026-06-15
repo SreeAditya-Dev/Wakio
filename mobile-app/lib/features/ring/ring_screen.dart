@@ -48,7 +48,9 @@ class _RingScreenState extends ConsumerState<RingScreen>
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _tick();
+    // Defer the first tick: TimeOfDay.format(context) needs
+    // MaterialLocalizations, which isn't available until after initState.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tick());
     _clockTimer =
         Timer.periodic(const Duration(seconds: 1), (_) => _tick());
   }
