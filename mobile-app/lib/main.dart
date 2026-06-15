@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'core/router/app_router.dart';
 import 'core/services/alarm_service.dart';
@@ -16,6 +17,9 @@ Future<void> main() async {
   final container = ProviderContainer();
   // Start the alarm engine; reschedules any alarms set before app death.
   await container.read(alarmServiceProvider).init();
+  // Android 13+: without this, the ringing alarm's notification (and its
+  // full-screen intent over the lockscreen) may not be shown.
+  await Permission.notification.request();
 
   runApp(
     UncontrolledProviderScope(

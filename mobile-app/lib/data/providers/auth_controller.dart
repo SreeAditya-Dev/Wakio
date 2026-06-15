@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/user.dart';
+import '../repositories/alarm_repository.dart';
 import '../repositories/auth_repository.dart';
 
 /// Auth state used by the router's redirect logic.
@@ -38,6 +39,7 @@ class AuthController extends Notifier<AuthState> {
   Future<void> login(String email, String password) async {
     final user = await _repo.login(email, password);
     state = Authenticated(user);
+    await _restoreAlarms();
   }
 
   Future<void> signup({
@@ -47,11 +49,21 @@ class AuthController extends Notifier<AuthState> {
   }) async {
     final user = await _repo.signup(name: name, email: email, password: password);
     state = Authenticated(user);
+    await _restoreAlarms();
   }
 
   Future<void> loginWithGoogle(String idToken) async {
     final user = await _repo.loginWithGoogle(idToken);
     state = Authenticated(user);
+    await _restoreAlarms();
+  }
+
+  /// Pull alarms from the backend and re-arm them. Run after every successful
+  /// login/signup so alarms survive an app uninstall/reinstall.
+  Future<void> _restoreAlarms() async {
+    final alarms = ref.read(alarmRepositoryProvider);
+    await alarms.pullFromServer();
+    await alarms.rescheduleAll();
   }
 
   Future<void> logout() async {

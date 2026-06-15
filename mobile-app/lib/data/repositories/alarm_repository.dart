@@ -127,6 +127,50 @@ class AlarmRepository {
       }
     }
   }
+
+  /// Pull the signed-in user's alarms from the backend into the local DB.
+  /// Restores alarms after a reinstall (local DB is wiped, server is the
+  /// source of truth) without clobbering not-yet-synced local edits.
+  Future<void> pullFromServer() async {
+    List<dynamic> remote;
+    try {
+      final res = await _dio.get('/alarms');
+      remote = res.data as List<dynamic>;
+    } on DioException {
+      return; // offline — local data stands
+    }
+
+    for (final raw in remote) {
+      final json = raw as Map<String, dynamic>;
+      final id = json['id'] as String;
+      final existing = await _db.alarmById(id);
+      if (existing != null && !existing.synced) continue; // local edits win
+
+      final time = (json['time'] as String).split(':');
+      final repeatDays = (json['repeat_days'] as List).cast<int>();
+
+      await _db.upsertAlarm(AlarmsCompanion(
+        id: Value(id),
+        label: Value(json['label'] as String),
+        hour: Value(int.parse(time[0])),
+        minute: Value(int.parse(time[1])),
+        repeatDays: Value(repeatDays.join(',')),
+        challengeType: Value(json['challenge_type'] as String),
+        volume: Value(json['volume'] as int),
+        snoozeMinutes: Value(json['snooze_minutes'] as int),
+        vibrate: Value(json['vibrate'] as bool),
+        enabled: Value(json['enabled'] as bool),
+        scheduledId: Value(existing?.scheduledId ?? _scheduledIdFor(id)),
+        updatedAt: Value(DateTime.now()),
+        synced: const Value(true),
+        deleted: const Value(false),
+      ));
+    }
+  }
+
+  /// Deterministic OS-alarm id derived from the server's alarm UUID, so the
+  /// same alarm maps to the same scheduled id across reinstalls.
+  int _scheduledIdFor(String alarmId) => alarmId.hashCode & 0x7FFFFFFF;
 }
 
 final alarmRepositoryProvider = Provider<AlarmRepository>((ref) {
