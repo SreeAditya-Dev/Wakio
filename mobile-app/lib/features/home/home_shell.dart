@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/router/app_router.dart';
+import '../../core/theme/app_colors.dart';
 
 /// Bottom-nav scaffold wrapping the four primary tabs.
 class HomeShell extends StatelessWidget {
@@ -54,6 +55,7 @@ class _FloatingNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 8, 20, bottomInset + 12),
@@ -61,7 +63,7 @@ class _FloatingNavBar extends StatelessWidget {
         height: 64,
         padding: const EdgeInsets.symmetric(horizontal: 8),
         decoration: BoxDecoration(
-          color: Colors.black,
+          color: isDark ? AppColors.darkCard : Colors.black,
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
@@ -81,6 +83,7 @@ class _FloatingNavBar extends StatelessWidget {
                 label: tabs[i].$4,
                 selected: i == selectedIndex,
                 onTap: () => onSelect(i),
+                isDark: isDark,
               ),
           ],
         ),
@@ -96,6 +99,7 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    required this.isDark,
   });
 
   final IconData icon;
@@ -103,9 +107,17 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final bool isDark;
 
   @override
   Widget build(BuildContext context) {
+    // Light theme: black bar + dark-gray active pill, white content.
+    // Dark theme: charcoal bar + orange active pill, near-black content
+    // so the active tab still pops against the dark background.
+    final pillColor = isDark ? AppColors.primary : const Color(0xFF2A2A2A);
+    final activeContentColor = isDark ? AppColors.onPrimary : Colors.white;
+    const inactiveContentColor = Colors.white;
+
     return Material(
       color: Colors.transparent,
       shape: const StadiumBorder(),
@@ -119,7 +131,7 @@ class _NavItem extends StatelessWidget {
               ? const EdgeInsets.symmetric(horizontal: 18, vertical: 12)
               : const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF2A2A2A) : Colors.transparent,
+            color: selected ? pillColor : Colors.transparent,
             borderRadius: BorderRadius.circular(28),
           ),
           child: Row(
@@ -127,7 +139,7 @@ class _NavItem extends StatelessWidget {
             children: [
               Icon(
                 selected ? activeIcon : icon,
-                color: Colors.white,
+                color: selected ? activeContentColor : inactiveContentColor,
                 size: 24,
               ),
               AnimatedSize(
@@ -139,7 +151,7 @@ class _NavItem extends StatelessWidget {
                         child: Text(
                           label,
                           style: GoogleFonts.inter(
-                            color: Colors.white,
+                            color: activeContentColor,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
