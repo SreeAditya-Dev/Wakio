@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -29,6 +31,9 @@ class HomeShell extends StatelessWidget {
     final index = _indexFor(location);
 
     return Scaffold(
+      // Let body content slide *under* the floating nav so the frosted bar has
+      // something to blur (and the glow shows through its edges).
+      extendBody: true,
       body: child,
       bottomNavigationBar: _FloatingNavBar(
         selectedIndex: index,
@@ -57,35 +62,54 @@ class _FloatingNavBar extends StatelessWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Frosted-glass pill. A single BackdropFilter over a small, static region
+    // is cheap; the content scrolling underneath shows through softly blurred.
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 8, 20, bottomInset + 12),
-      child: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: isDark ? AppColors.darkCard : Colors.black,
           borderRadius: BorderRadius.circular(32),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.25),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.30),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            for (var i = 0; i < tabs.length; i++)
-              _NavItem(
-                icon: tabs[i].$3,
-                activeIcon: tabs[i].$2,
-                label: tabs[i].$4,
-                selected: i == selectedIndex,
-                onTap: () => onSelect(i),
-                isDark: isDark,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(32),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              height: 64,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(
+                // Tinted, semi-transparent so the blur reads as frosted glass
+                // rather than a solid bar.
+                color: (isDark ? Colors.white : Colors.black)
+                    .withValues(alpha: isDark ? 0.08 : 0.55),
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.14),
+                ),
               ),
-          ],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  for (var i = 0; i < tabs.length; i++)
+                    _NavItem(
+                      icon: tabs[i].$3,
+                      activeIcon: tabs[i].$2,
+                      label: tabs[i].$4,
+                      selected: i == selectedIndex,
+                      onTap: () => onSelect(i),
+                      isDark: isDark,
+                    ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

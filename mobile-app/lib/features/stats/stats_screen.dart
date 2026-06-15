@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/storage/app_database.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/glass.dart';
 import '../../data/repositories/streak_repository.dart';
 
 class StatsScreen extends ConsumerWidget {
@@ -18,10 +19,11 @@ class StatsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Statistics')),
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(streakSummaryProvider),
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      body: AmbientGlow(
+        child: RefreshIndicator(
+          onRefresh: () async => ref.invalidate(streakSummaryProvider),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 108),
           children: [
             summary.when(
               loading: () => const AppCard(child: SizedBox(height: 90)),
@@ -81,7 +83,8 @@ class StatsScreen extends ConsumerWidget {
                 );
               },
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -98,7 +101,7 @@ class _Metric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return AppCard(
+    return GlassCard(
       padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
       child: Column(
         children: [
@@ -125,7 +128,9 @@ class _HistoryRow extends StatelessWidget {
     final theme = Theme.of(context);
     final df = DateFormat('d MMM • h:mm a');
     final relapsed = item.recheckStatus == 'relapsed';
-    return AppCard(
+    // Cheap glass (no per-row BackdropFilter) — keeps a long history list smooth.
+    return GlassCard(
+      blur: false,
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [

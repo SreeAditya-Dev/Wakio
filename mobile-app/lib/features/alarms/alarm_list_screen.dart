@@ -18,11 +18,17 @@ class AlarmListScreen extends ConsumerWidget {
     final alarms = ref.watch(alarmsStreamProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Alarms')),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.onPrimary,
-        onPressed: () => context.push(Routes.createAlarm),
-        child: const Icon(Icons.add_rounded),
+      // Lift the button clear of the floating glass nav bar (the shell now
+      // extends its body under the nav, so a default-positioned FAB sits
+      // behind the pill).
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 76),
+        child: FloatingActionButton(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.onPrimary,
+          onPressed: () => context.push(Routes.createAlarm),
+          child: const Icon(Icons.add_rounded),
+        ),
       ),
       body: alarms.when(
         loading: () => const Center(child: CircularProgressIndicator()),
