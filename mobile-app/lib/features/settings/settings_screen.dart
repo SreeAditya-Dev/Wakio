@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/services/alarm_service.dart';
+import '../../core/services/detection_service.dart';
 import '../../core/services/permissions_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/providers/theme_controller.dart';
@@ -51,6 +52,9 @@ class SettingsScreen extends ConsumerWidget {
             title: 'Haptics',
             subtitle: 'Tactile feedback on key interactions.',
           ),
+          const Divider(),
+          _SectionHeader('Scan to stop'),
+          const _DetectionStatusTile(),
           const Divider(),
           _SectionHeader('Background reliability'),
           const _ReliabilitySection(),
@@ -290,6 +294,66 @@ class _PermissionTile extends StatelessWidget {
               style: TextButton.styleFrom(foregroundColor: AppColors.primary),
               child: Text(optional ? 'Manage' : 'Fix'),
             ),
+    );
+  }
+}
+
+/// Shows whether the on-device detector is available, so the user knows
+/// up front whether scan-to-stop works offline or falls back to a quick
+/// challenge. Informational and calm — a cloud-only setup is a valid state,
+/// not an error.
+class _DetectionStatusTile extends ConsumerStatefulWidget {
+  const _DetectionStatusTile();
+
+  @override
+  ConsumerState<_DetectionStatusTile> createState() =>
+      _DetectionStatusTileState();
+}
+
+class _DetectionStatusTileState extends ConsumerState<_DetectionStatusTile> {
+  bool? _onDevice;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final ready = await ref.read(detectionServiceProvider).onDeviceReady();
+    if (mounted) setState(() => _onDevice = ready);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = _onDevice;
+
+    if (ready == null) {
+      return const ListTile(
+        leading: Icon(Icons.hourglass_empty_rounded),
+        title: Text('Checking scanner…'),
+      );
+    }
+
+    if (ready) {
+      return const ListTile(
+        leading: Icon(Icons.offline_bolt_rounded, color: AppColors.success),
+        title: Text('On-device scanner ready'),
+        subtitle: Text(
+          'Scan-to-stop runs on your phone and works fully offline — no '
+          'internet needed.',
+        ),
+      );
+    }
+
+    return ListTile(
+      leading:
+          Icon(Icons.cloud_outlined, color: Theme.of(context).disabledColor),
+      title: const Text('Cloud scanner'),
+      subtitle: const Text(
+        'Scans are verified online. With no connection, you’ll solve a quick '
+        'challenge to stop the alarm instead — it always works offline.',
+      ),
     );
   }
 }

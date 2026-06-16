@@ -11,7 +11,9 @@ final dioProvider = Provider<Dio>((ref) {
   final dio = Dio(
     BaseOptions(
       baseUrl: AppEnv.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 15),
+      // Kept modest so offline calls fail fast — important for the scan loop,
+      // which needs to detect an unreachable server quickly to fall back.
+      connectTimeout: const Duration(seconds: 8),
       receiveTimeout: const Duration(seconds: 20),
       headers: {'Content-Type': 'application/json'},
     ),
