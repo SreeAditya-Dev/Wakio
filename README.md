@@ -83,10 +83,10 @@ flowchart TB
     end
 
     %% Connections
-    UI <==>|REST API (JWT)| API
-    UI <==>|Live Sync| SupabaseRT
-    API <==>|Async SQLAlchemy| Supabase
-    API <==>|Cache/Tasks| Redis
+    UI <-->|"REST API (JWT)"| API
+    UI <-->|Live Sync| SupabaseRT
+    API <-->|Async SQLAlchemy| Supabase
+    API <-->|Cache/Tasks| Redis
     SupabaseRT -.->|RLS Validation| Supabase
 ```
 
