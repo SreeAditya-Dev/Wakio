@@ -50,6 +50,8 @@ The app features robust background execution—alarms will ring at **full volume
 
 ## 🏗️ System Architecture
 
+![System Architecture Neon Banner](./assets/neon_architecture_banner.jpg)
+
 ```mermaid
 flowchart TB
     %% Mobile Client
